@@ -1,47 +1,80 @@
-# Shadow Flap: Monster Chase
+# ShadowFlap - Monster Chase
 
-A high-octane silhouette arcade game where you navigate through treacherous monster patterns. Shadow Flap takes the classic endless runner formula and injects it with adaptive difficulty, daily seeded challenges, and procedural audio.
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-22_LTS-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 🎮 Features
+> *"Identify the portals, master the chaos."*
 
-- **Endless Random Mode**: Test your reflexes against procedurally generated obstacle courses.
-- **Daily Seeded Track**: Compete against yourself on a unique, globally seeded track that changes every 24 hours.
-- **Chaos Master Mode**: An unlockable extreme difficulty mode for elite players.
-- **Adaptive Difficulty**: The game speed increases by 5% for every 5 obstacles cleared, constantly pushing your limits.
-- **Performance Registry**: Track your progress with local high scores and a history of your last 5 runs.
-- **Achievement Medals**: Unlock badges like "100 Point Streak" and "Speed Demon" as you hit specific milestones.
-- **Procedural Audio**: Features a dark, mystic electronic ambient drone and synthesized sound effects powered entirely by the Web Audio API.
+A high-octane dark silhouette arcade precision flapper built with React 19, TypeScript, and HTML5 Canvas. Dodge lurking shadow monsters, master shifting dimensional portals (Split, Mirror, Gravity Inversion), and compete across procedural endless runs and synchronized daily tracks.
 
-## 🛠️ Tech Stack
+---
 
-- **Framework**: [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- **Build Tool**: [Vite](https://vitejs.dev/)
-- **Rendering**: HTML5 `<canvas>` API for high-performance 60fps game loops
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Audio**: Web Audio API (Zero external audio assets)
+## 🚀 Features
 
-## 🚀 Getting Started
+- **⚡ 3 Shifting Dimensions**:
+  - **Split Dimension**: Multiplies your character into three coordinated orbs.
+  - **Mirror Dimension**: Reverses directional controls for high-intensity maneuvering.
+  - **Gravity Dimension**: Flips global gravity upside-down.
+- **🎯 3 Difficulty Tiers**: Easy, Medium (Standard), and Hard (Hyper-Velocity).
+- **📅 Daily Seeded Tracks**: Synchronized global seed where all players encounter identical obstacle patterns.
+- **✨ Dynamic Particle Engine**: Real-time flap bursts, scoring explosions, and portal shockwaves.
+- **📱 Fully Responsive**: Single-viewport portrait and desktop responsive layout with instant redeploy loop.
 
-To run this project locally, follow these steps:
+---
 
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-2. **Start the development server**:
-   ```bash
-   npm run dev
-   ```
-3. **Play the game**: Open your browser and navigate to the local host URL provided by Vite (typically `http://localhost:3000`).
+## 🛠️ Development & Building
 
-## 🕹️ How to Play
+### Prerequisites
+- Node.js 22+ (`.nvmrc` included)
+- npm 10+
 
-- **Click, Tap, or press Spacebar** to flap and gain altitude.
-- Navigate your character through the safe zones between the silhouette monster obstacles.
-- Each pair of obstacles successfully passed grants **1 point**.
-- As your score increases, the game speed will accelerate. Survive as long as you can!
+### Setup
+```bash
+# Clone the repository
+git clone https://github.com/your-username/shadowflap-monster-chase.git
+cd shadowflap-monster-chase
 
-## 📜 License
+# Use correct Node version
+nvm use
 
-This project is open-source and available under the MIT License.
+# Install dependencies
+npm ci
+```
+
+### Scripts
+```bash
+# Start local development server
+npm run dev
+
+# Run TypeScript type check
+npx tsc --noEmit
+
+# Build production static bundle
+npm run build
+
+# Preview production build locally
+npm run preview
+```
+
+---
+
+## 🐳 Docker Deployment
+
+Build and run using the lightweight, unprivileged multi-stage container:
+
+```bash
+# Build container image
+docker build -t shadowflap:latest .
+
+# Run on port 8080
+docker run -p 8080:8080 shadowflap:latest
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.

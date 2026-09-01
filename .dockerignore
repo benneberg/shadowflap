@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.github
+.vscode
+.idea
+.llm-context
+*.log
+npm-debug.log*
+.DS_Store
+README.md
+ARCHITECTURE.md
+LLM.md
+PROJECT_PROFILE.md

@@ -1,0 +1,27 @@
+# ShadowFlap Repository AI Architecture & Coding Guidelines
+
+## Tech Stack & Runtime
+- React 19 (functional components, standard hooks)
+- TypeScript 5.8+ (strict type checking enabled, no implicit any)
+- Vite 6 bundler
+- HTML5 Canvas 2D Rendering Engine with custom Particle Physics
+- Tailwind CSS for HUD/UI styling and Lucide React icons
+
+## Core Principles
+1. **TypeScript Strictness**:
+   - Always declare explicit types/interfaces in `types.ts`.
+   - Never use `any` or loose type casting.
+   - Use standard `enum` definitions rather than `const enum`.
+
+2. **Canvas 2D Game Loop Performance**:
+   - Keep game logic calculations inside `requestAnimationFrame` render loops.
+   - Never allocate objects (e.g. `new Array()`, new object literals) inside hot per-frame render loops; reuse existing refs/arrays.
+   - Separate game simulation state (stored in React `useRef`) from HUD reactive state (`useState`) to prevent unnecessary React re-renders.
+
+3. **Audio & Asset Guidelines**:
+   - Synthesize all sound effects via Web Audio API (`utils/sounds.ts`) without external audio file bloat.
+   - Maintain self-contained asset bundling for offline and HTML5 embed execution.
+
+4. **UI & Viewport Constraints**:
+   - Ensure all menu and game over modals fit strictly within single viewport bounds (`100dvh` / `h-full`) without requiring scrolling.
+   - Support both touch events (`pointerdown`) and keyboard bindings (`Space`, `ArrowUp`).
