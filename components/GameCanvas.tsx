@@ -1,13 +1,15 @@
 
 import React, { useRef, useEffect, useCallback } from 'react';
-import { GameMode, GameState, Obstacle, MonsterType, ActiveMode } from '../types';
+import { GameMode, GameState, Obstacle, MonsterType, ActiveMode, Difficulty } from '../types';
 import { SeededRandom, getDailySeed } from '../utils/random';
 import { drawBird, drawMonster, drawPillar, drawBackground, drawTrail, drawPortal } from '../utils/drawing';
 import { sounds } from '../utils/sounds';
+import { ParticleSystem } from '../utils/particles';
 
 interface GameCanvasProps {
   mode: GameMode;
   state: GameState;
+  difficulty?: Difficulty;
   onGameOver: (score: number) => void;
   onScoreUpdate: (score: number) => void;
   startingMode?: ActiveMode;
@@ -17,11 +19,19 @@ interface BirdEntity {
   x: number;
   y: number;
   vel: number;
+  prevVel?: number;
   active: boolean;
   trail: {x: number, y: number, alpha: number, scale: number}[];
 }
 
-const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScoreUpdate, startingMode = ActiveMode.NORMAL }) => {
+const GameCanvas: React.FC<GameCanvasProps> = ({ 
+  mode, 
+  state, 
+  difficulty = Difficulty.MEDIUM,
+  onGameOver, 
+  onScoreUpdate, 
+  startingMode = ActiveMode.NORMAL 
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>(0);
   
@@ -36,12 +46,47 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
   const invincibilityFrames = useRef(0);
   const seededRandom = useRef<SeededRandom | null>(null);
   const hasForcedPortalSpawned = useRef(false);
+  const particles = useRef<ParticleSystem>(new ParticleSystem());
 
-  const GRAVITY = 0.28;
-  const FLAP = -5.4;
-  const SPEED = 2.2; 
+  // Difficulty configs
+  const getDifficultyParams = () => {
+    switch (difficulty) {
+      case Difficulty.EASY:
+        return {
+          speed: 1.75,
+          speedMult: 1.035,
+          gapBase: 215,
+          gapShrinkRate: 0.08,
+          spawnInterval: 480,
+          gravity: 0.25,
+          flap: -5.0
+        };
+      case Difficulty.HARD:
+        return {
+          speed: 2.8,
+          speedMult: 1.065,
+          gapBase: 135,
+          gapShrinkRate: 0.12,
+          spawnInterval: 360,
+          gravity: 0.31,
+          flap: -5.7
+        };
+      case Difficulty.MEDIUM:
+      default:
+        return {
+          speed: 2.2,
+          speedMult: 1.05,
+          gapBase: 170,
+          gapShrinkRate: 0.1,
+          spawnInterval: 420,
+          gravity: 0.28,
+          flap: -5.4
+        };
+    }
+  };
+
+  const diffParams = getDifficultyParams();
   const BIRD_RADIUS = 16;
-  const SPAWN_INTERVAL = 420;
 
   const initGame = useCallback(() => {
     const canvas = canvasRef.current;
@@ -55,6 +100,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
       x: startX,
       y: startY,
       vel: 0,
+      prevVel: 0,
       active: true,
       trail: []
     }];
@@ -63,10 +109,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
     scoredGroups.current = new Set();
     score.current = 0;
     worldOffset.current = 0;
-    lastSpawn.current = -SPAWN_INTERVAL;
+    lastSpawn.current = -diffParams.spawnInterval;
     lastPortalScore.current = 0;
     invincibilityFrames.current = 0;
     hasForcedPortalSpawned.current = false;
+    particles.current.clear();
     onScoreUpdate(0);
     sounds.startBackgroundMusic();
 
@@ -75,21 +122,24 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
     } else {
       seededRandom.current = null;
     }
-  }, [mode, onScoreUpdate]);
+  }, [mode, onScoreUpdate, diffParams.spawnInterval]);
 
   const flap = useCallback((e: React.PointerEvent | PointerEvent) => {
     if (state === GameState.PLAYING) {
       if (e.cancelable) e.preventDefault();
       
-      const currentFlap = activeMode.current === ActiveMode.GRAVITY ? -FLAP : FLAP;
+      const currentFlap = activeMode.current === ActiveMode.GRAVITY ? -diffParams.flap : diffParams.flap;
+      const flapDir = activeMode.current === ActiveMode.GRAVITY ? -1 : 1;
+      
       birds.current.forEach(bird => {
         if (bird.active) {
           bird.vel = currentFlap;
+          particles.current.emitFlapBurst(bird.x, bird.y, activeMode.current, flapDir);
         }
       });
       sounds.playFlap();
     }
-  }, [state]);
+  }, [state, diffParams.flap]);
 
   useEffect(() => {
     if (state === GameState.PLAYING) {
@@ -155,7 +205,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
       });
     } else if (rng < 0.3) {
       const gapY = 250 + (rng * (canvasHeight - 500));
-      const gapSize = 170 - (Math.min(score.current, 500) * 0.1);
+      const gapSize = Math.max(90, diffParams.gapBase - (Math.min(score.current, 500) * diffParams.gapShrinkRate));
       newObstacles.push({
         id: groupId + '_t', groupId, type: 'pillar', x: canvasWidth, y: 0, width: 80, height: gapY - gapSize / 2,
         speedX: 0, speedY: 0, phase: 0, rotation: 0, passed: false
@@ -218,16 +268,23 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
     const canvas = canvasRef.current;
     if (!canvas || state !== GameState.PLAYING) return;
 
-    worldOffset.current += SPEED * Math.pow(1.05, Math.floor(score.current / 5));
+    const currentSpeed = diffParams.speed * Math.pow(diffParams.speedMult, Math.floor(score.current / 5));
+    worldOffset.current += currentSpeed;
     if (invincibilityFrames.current > 0) invincibilityFrames.current--;
 
     // Bird Updates
-    const curGravity = activeMode.current === ActiveMode.GRAVITY ? -GRAVITY : GRAVITY;
+    const curGravity = activeMode.current === ActiveMode.GRAVITY ? -diffParams.gravity : diffParams.gravity;
     birds.current.forEach(bird => {
       if (!bird.active) return;
       
+      const previousVel = bird.vel;
       bird.vel += curGravity;
       bird.y += bird.vel;
+
+      // Check for direction change (apex of flap) for subtle directional particles
+      if ((previousVel < 0 && bird.vel >= 0) || (previousVel > 0 && bird.vel <= 0)) {
+        particles.current.emitFlapBurst(bird.x, bird.y, activeMode.current, bird.vel > 0 ? 1 : -1);
+      }
 
       const inflation = Math.max(1, 1 - (bird.vel * 0.08));
       bird.trail.unshift({ x: bird.x, y: bird.y, alpha: 0.4, scale: inflation });
@@ -236,6 +293,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
 
       // ROOF COLLISION: Tightened boundary
       if (bird.y < 0) {
+        particles.current.emitCollisionImpact(bird.x, 10, false);
         if (activeMode.current !== ActiveMode.NORMAL) {
           activeMode.current = ActiveMode.NORMAL;
           bird.y = 50;
@@ -249,6 +307,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
 
       // FLOOR COLLISION
       if (bird.y > canvas.height) {
+          particles.current.emitCollisionImpact(bird.x, canvas.height - 10, false);
           if (activeMode.current !== ActiveMode.NORMAL) {
               activeMode.current = ActiveMode.NORMAL;
               bird.y = canvas.height / 2;
@@ -269,10 +328,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
       return;
     }
 
-    // Difficulty Progression: Speed increases by 5% every 5 points
-    const currentSpeed = SPEED * Math.pow(1.05, Math.floor(score.current / 5));
-
-    if (worldOffset.current - lastSpawn.current > SPAWN_INTERVAL) {
+    if (worldOffset.current - lastSpawn.current > diffParams.spawnInterval) {
       spawnObstacle(canvas.width, canvas.height);
       lastSpawn.current = worldOffset.current;
     }
@@ -308,6 +364,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
           score.current += (1 * multiplier);
           onScoreUpdate(score.current);
           sounds.playScore();
+          // Trigger celebratory scoring particle explosion
+          particles.current.emitScoreExplosion(leadBird.x + 20, leadBird.y, activeMode.current);
         }
       }
 
@@ -323,6 +381,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
         if (obs.type === 'pillar') {
             if (bird.x + effectiveBirdR > obs.x && bird.x - effectiveBirdR < obs.x + obs.width &&
                 bird.y + effectiveBirdR > obs.y && bird.y - effectiveBirdR < obs.y + obs.height) {
+                particles.current.emitCollisionImpact(bird.x, bird.y, false);
                 handleCollision(bird);
             }
         } else if (obs.type === 'portal') {
@@ -332,9 +391,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
                 obs.passed = true;
                 obs.x = -3000;
                 
+                let portalColor = 'rgba(255, 255, 255, ';
+                if (obs.portalType === ActiveMode.SPLIT) portalColor = 'rgba(59, 130, 246, ';
+                else if (obs.portalType === ActiveMode.MIRROR) portalColor = 'rgba(168, 85, 247, ';
+                else if (obs.portalType === ActiveMode.GRAVITY) portalColor = 'rgba(249, 115, 22, ';
+                
+                particles.current.emitCollisionImpact(bird.x, bird.y, true, portalColor);
+
                 if (activeMode.current === ActiveMode.SPLIT && prevMode !== ActiveMode.SPLIT) {
                     const baseBird = birds.current.find(b => b.active) || bird;
-                    // REFINED SPLIT: Avoid moving birds too far left. Spread primarily vertically.
                     birds.current = [
                         { ...baseBird, x: baseBird.x, y: baseBird.y - 180, active: true, trail: [] },
                         { ...baseBird, x: baseBird.x + 80, y: baseBird.y, active: true, trail: [] },
@@ -348,11 +413,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
         } else {
             const combinedR = effectiveBirdR + (obs.width / 2) - 10;
             if (distSq < combinedR * combinedR) {
+                particles.current.emitCollisionImpact(bird.x, bird.y, false);
                 handleCollision(bird);
             }
         }
       });
     });
+
+    // Update dynamic particle engine
+    particles.current.update();
 
     obstacles.current = obstacles.current.filter(obs => obs.x + 1000 > 0);
   };
@@ -416,6 +485,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
       }
     });
 
+    // Draw active particle effects
+    particles.current.draw(ctx);
+
     ctx.restore();
 
     requestRef.current = requestAnimationFrame(() => {
@@ -452,3 +524,4 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, state, onGameOver, onScor
 };
 
 export default GameCanvas;
+

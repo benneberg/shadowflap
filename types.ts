@@ -5,6 +5,12 @@ export enum GameMode {
   MASTER = 'MASTER'
 }
 
+export enum Difficulty {
+  EASY = 'EASY',
+  MEDIUM = 'MEDIUM',
+  HARD = 'HARD'
+}
+
 export enum GameState {
   MENU = 'MENU',
   PLAYING = 'PLAYING',
