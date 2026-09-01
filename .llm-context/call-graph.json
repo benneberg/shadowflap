@@ -1,0 +1,109 @@
+{
+  "_meta": {
+    "generated": "2026-08-27 18:26 UTC",
+    "total_functions": 18,
+    "connected_functions": 13,
+    "depth": 2,
+    "note": "Shows which functions call which others (2-level depth). Only includes functions with at least one internal connection. Use with symbol-index.json to trace call paths."
+  },
+  "graph": {
+    "between": {
+      "file": "utils/random.ts",
+      "line": 14,
+      "calls": [
+        "next"
+      ]
+    },
+    "drawBackground": {
+      "file": "utils/drawing.ts",
+      "line": 252,
+      "calls": [
+        "drawSilhouettes"
+      ]
+    },
+    "drawBird": {
+      "file": "utils/drawing.ts",
+      "line": 4,
+      "called_by": [
+        "if"
+      ]
+    },
+    "drawPillar": {
+      "file": "utils/drawing.ts",
+      "line": 236,
+      "called_by": [
+        "if"
+      ]
+    },
+    "drawSilhouettes": {
+      "file": "utils/drawing.ts",
+      "line": 296,
+      "called_by": [
+        "drawBackground"
+      ]
+    },
+    "drawTrail": {
+      "file": "utils/drawing.ts",
+      "line": 94,
+      "called_by": [
+        "if"
+      ]
+    },
+    "getDailySeed": {
+      "file": "utils/random.ts",
+      "line": 20,
+      "called_by": [
+        "if"
+      ]
+    },
+    "if": {
+      "file": "components/GameCanvas.tsx",
+      "line": 413,
+      "calls": [
+        "drawBird",
+        "drawPillar",
+        "drawTrail",
+        "getDailySeed",
+        "playFlap",
+        "playHit",
+        "playScore",
+        "stopBackgroundMusic"
+      ]
+    },
+    "next": {
+      "file": "utils/random.ts",
+      "line": 10,
+      "called_by": [
+        "between"
+      ]
+    },
+    "playFlap": {
+      "file": "utils/sounds.ts",
+      "line": 13,
+      "called_by": [
+        "if"
+      ]
+    },
+    "playHit": {
+      "file": "utils/sounds.ts",
+      "line": 45,
+      "called_by": [
+        "if"
+      ]
+    },
+    "playScore": {
+      "file": "utils/sounds.ts",
+      "line": 29,
+      "called_by": [
+        "if"
+      ]
+    },
+    "stopBackgroundMusic": {
+      "file": "utils/sounds.ts",
+      "line": 104,
+      "called_by": [
+        "if"
+      ]
+    }
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "_meta": {
+    "generated": "2026-08-27 18:26 UTC",
+    "total_files": 8,
+    "scored_files": 8,
+    "weights": {
+      "fan_in": 0.4,
+      "recency": 0.25,
+      "pattern_density": 0.25,
+      "size": 0.1
+    },
+    "note": "Files ranked by likelihood of needing edits when implementing a change. fan_in=centrality, recency=recent activity, pattern_density=business logic density, size=inverse file size."
+  },
+  "files": [
+    {
+      "path": "types.ts",
+      "score": 0.7464,
+      "imported_by_count": 3,
+      "days_since_modified": 0.0,
+      "pattern_hits": 0,
+      "factors": {
+        "fan_in": 1.0,
+        "recency": 0.5,
+        "pattern_density": 0.5,
+        "size": 0.964
+      },
+      "rank": 1
+    },
+    {
+      "path": "App.tsx",
+      "score": 0.5236,
+      "imported_by_count": 2,
+      "days_since_modified": 0.0,
+      "pattern_hits": 0,
+      "factors": {
+        "fan_in": 0.667,
+        "recency": 0.5,
+        "pattern_density": 0.5,
+        "size": 0.069
+      },
+      "rank": 2
+    },
+    {
+      "path": "components/GameCanvas.tsx",
+      "score": 0.5167,
+      "imported_by_count": 2,
+      "days_since_modified": 0.0,
+      "pattern_hits": 0,
+      "factors": {
+        "fan_in": 0.667,
+        "recency": 0.5,
+        "pattern_density": 0.5,
+        "size": 0.0
+      },
+      "rank": 3
+    },
+    {
+      "path": "utils/random.ts",
+      "score": 0.4824,
+      "imported_by_count": 1,
+      "days_since_modified": 0.0,
+      "pattern_hits": 0,
+      "factors": {
+        "fan_in": 0.333,
+        "recency": 0.5,
+        "pattern_density": 0.5,
+        "size": 0.99
+      },
+      "rank": 4
+    },
+    {
+      "path": "utils/sounds.ts",
+      "score": 0.4624,
+      "imported_by_count": 1,
+      "days_since_modified": 0.0,
+      "pattern_hits": 0,
+      "factors": {
+        "fan_in": 0.333,
+        "recency": 0.5,
+        "pattern_density": 0.5,
+        "size": 0.791
+      },
+      "rank": 5
+    },
+    {
+      "path": "utils/drawing.ts",
+      "score": 0.428,
+      "imported_by_count": 1,
+      "days_since_modified": 0.0,
+      "pattern_hits": 0,
+      "factors": {
+        "fan_in": 0.333,
+        "recency": 0.5,
+        "pattern_density": 0.5,
+        "size": 0.447
+      },
+      "rank": 6
+    },
+    {
+      "path": "index.tsx",
+      "score": 0.35,
+      "imported_by_count": 0,
+      "days_since_modified": 0.0,
+      "pattern_hits": 0,
+      "factors": {
+        "fan_in": 0.0,
+        "recency": 0.5,
+        "pattern_density": 0.5,
+        "size": 1.0
+      },
+      "rank": 7
+    },
+    {
+      "path": "vite.config.ts",
+      "score": 0.3486,
+      "imported_by_count": 0,
+      "days_since_modified": 0.0,
+      "pattern_hits": 0,
+      "factors": {
+        "fan_in": 0.0,
+        "recency": 0.5,
+        "pattern_density": 0.5,
+        "size": 0.986
+      },
+      "rank": 8
+    }
+  ]
+}

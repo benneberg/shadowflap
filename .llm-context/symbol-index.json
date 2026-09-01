@@ -1,0 +1,63 @@
+{
+  "_meta": {
+    "generated": "2026-08-27 18:26 UTC",
+    "total_symbols": 11
+  },
+  "symbols": {
+    "Point": {
+      "file": "types.ts",
+      "line": 21,
+      "kind": "interface"
+    },
+    "Obstacle": {
+      "file": "types.ts",
+      "line": 28,
+      "kind": "interface"
+    },
+    "GameSettings": {
+      "file": "types.ts",
+      "line": 50,
+      "kind": "interface"
+    },
+    "MonsterType": {
+      "file": "types.ts",
+      "line": 26,
+      "kind": "type"
+    },
+    "GameMode": {
+      "file": "types.ts",
+      "line": 2,
+      "kind": "enum"
+    },
+    "GameState": {
+      "file": "types.ts",
+      "line": 8,
+      "kind": "enum"
+    },
+    "ActiveMode": {
+      "file": "types.ts",
+      "line": 14,
+      "kind": "enum"
+    },
+    "SoundManager": {
+      "file": "utils/sounds.ts",
+      "line": 2,
+      "kind": "class"
+    },
+    "SeededRandom": {
+      "file": "utils/random.ts",
+      "line": 2,
+      "kind": "class"
+    },
+    "GameCanvasProps": {
+      "file": "components/GameCanvas.tsx",
+      "line": 8,
+      "kind": "interface"
+    },
+    "BirdEntity": {
+      "file": "components/GameCanvas.tsx",
+      "line": 16,
+      "kind": "interface"
+    }
+  }
+}

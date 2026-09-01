@@ -1,0 +1,27 @@
+{
+  "service": "applet",
+  "repository": null,
+  "exposes": {
+    "api": [],
+    "events": [],
+    "types": [
+      "GameSettings",
+      "MonsterType",
+      "Obstacle",
+      "Point"
+    ]
+  },
+  "depends_on": {
+    "services": [],
+    "apis_consumed": [],
+    "databases": [],
+    "message_queues": [],
+    "external_apis": []
+  },
+  "tags": [
+    "frontend",
+    "typescript",
+    "ui"
+  ],
+  "detected_at": "2026-08-27 18:26 UTC"
+}

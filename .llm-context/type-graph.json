@@ -1,0 +1,58 @@
+{
+  "_meta": {
+    "generated": "2026-08-27 18:26 UTC",
+    "total_types": 7,
+    "note": "TypeScript type cross-reference. used_in lists files that explicitly import each type."
+  },
+  "types": {
+    "ActiveMode": {
+      "defined_in": "types.ts",
+      "kind": "enum",
+      "used_in": [
+        "App.tsx",
+        "components/GameCanvas.tsx",
+        "utils/drawing.ts"
+      ]
+    },
+    "GameMode": {
+      "defined_in": "types.ts",
+      "kind": "enum",
+      "used_in": [
+        "App.tsx",
+        "components/GameCanvas.tsx"
+      ]
+    },
+    "GameSettings": {
+      "defined_in": "types.ts",
+      "kind": "interface",
+      "used_in": []
+    },
+    "GameState": {
+      "defined_in": "types.ts",
+      "kind": "enum",
+      "used_in": [
+        "App.tsx",
+        "components/GameCanvas.tsx"
+      ]
+    },
+    "MonsterType": {
+      "defined_in": "types.ts",
+      "kind": "type",
+      "used_in": [
+        "components/GameCanvas.tsx"
+      ]
+    },
+    "Obstacle": {
+      "defined_in": "types.ts",
+      "kind": "interface",
+      "used_in": [
+        "components/GameCanvas.tsx"
+      ]
+    },
+    "Point": {
+      "defined_in": "types.ts",
+      "kind": "interface",
+      "used_in": []
+    }
+  }
+}

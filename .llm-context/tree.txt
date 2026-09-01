@@ -1,0 +1,24 @@
+# File Tree: applet
+# Generated: 2026-08-27 18:26 UTC
+# Files indexed: 17
+
+|-- .llm-context/ (0 files)
+|-- components/ (1 files)
+|   `-- GameCanvas.tsx (16.7KB)
+|-- utils/ (3 files)
+|   |-- drawing.ts (9.4KB)
+|   |-- random.ts (513B)
+|   `-- sounds.ts (3.8KB)
+|-- .env.local (35B)
+|-- .gitignore (253B)
+|-- App.tsx (15.5KB)
+|-- bun.lock (28.6KB)
+|-- index.html (1.1KB)
+|-- index.tsx (351B)
+|-- metadata.json (282B)
+|-- package.json (454B)
+|-- PROJECT_PROFILE.md (11.8KB)
+|-- README.md (2.2KB)
+|-- tsconfig.json (542B)
+|-- types.ts (961B)
+`-- vite.config.ts (580B)
