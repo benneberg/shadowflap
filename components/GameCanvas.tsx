@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { GameMode, GameState, Obstacle, MonsterType, ActiveMode, Difficulty } from '../types';
 import { SeededRandom, getDailySeed } from '../utils/random';
-import { drawBird, drawMonster, drawPillar, drawBackground, drawTrail, drawPortal } from '../utils/drawing';
+import { drawBird, drawMonster, drawPillar, drawBackground, drawTrail, drawPortal, drawPowerUp, drawLaser } from '../utils/drawing';
 import { sounds } from '../utils/sounds';
 import { ParticleSystem } from '../utils/particles';
 
@@ -47,6 +47,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const seededRandom = useRef<SeededRandom | null>(null);
   const hasForcedPortalSpawned = useRef(false);
   const particles = useRef<ParticleSystem>(new ParticleSystem());
+  const hasShield = useRef(false);
+  const slowMoTimer = useRef(0);
 
   // Difficulty configs
   const getDifficultyParams = () => {
@@ -113,6 +115,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     lastPortalScore.current = 0;
     invincibilityFrames.current = 0;
     hasForcedPortalSpawned.current = false;
+    hasShield.current = false;
+    slowMoTimer.current = 0;
     particles.current.clear();
     onScoreUpdate(0);
     sounds.startBackgroundMusic();
@@ -149,8 +153,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
   const spawnObstacle = (canvasWidth: number, canvasHeight: number) => {
     const rng = seededRandom.current ? seededRandom.current.next() : Math.random();
+    const rng2 = seededRandom.current ? seededRandom.current.next() : Math.random();
     let newObstacles: Obstacle[] = [];
-    const monsterTypes: MonsterType[] = ['saw', 'gear', 'bloat', 'square'];
+    const monsterTypes: MonsterType[] = ['saw', 'gear', 'bloat', 'square', 'chaser', 'blade'];
     const chosenType = monsterTypes[Math.floor(rng * monsterTypes.length)];
     const groupId = 'grp_' + Math.random().toString(36).substr(2, 9);
 
@@ -197,15 +202,16 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       return;
     }
 
-    if (rng < 0.15) {
+    if (rng < 0.12) {
       newObstacles.push({
         id: groupId, groupId, type: 'monster', monsterType: 'square',
         x: canvasWidth + 200, y: canvasHeight / 2, width: 250, height: 250,
         speedX: 0, speedY: 1, phase: 0, rotation: 0, passed: false
       });
-    } else if (rng < 0.3) {
+    } else if (rng < 0.28) {
+      // Pillars with gap & optional power-up
       const gapY = 250 + (rng * (canvasHeight - 500));
-      const gapSize = Math.max(90, diffParams.gapBase - (Math.min(score.current, 500) * diffParams.gapShrinkRate));
+      const gapSize = Math.max(95, diffParams.gapBase - (Math.min(score.current, 500) * diffParams.gapShrinkRate));
       newObstacles.push({
         id: groupId + '_t', groupId, type: 'pillar', x: canvasWidth, y: 0, width: 80, height: gapY - gapSize / 2,
         speedX: 0, speedY: 0, phase: 0, rotation: 0, passed: false
@@ -214,7 +220,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         id: groupId + '_b', groupId, type: 'pillar', x: canvasWidth, y: gapY + gapSize / 2, width: 80, height: canvasHeight - (gapY + gapSize / 2),
         speedX: 0, speedY: 0, phase: 0, rotation: 0, passed: false
       });
-    } else if (rng < 0.45) {
+      // Chance of bonus power-up inside the gap
+      if (rng2 < 0.35) {
+        const pTypes: ('shield' | 'slowmo' | 'star')[] = ['shield', 'slowmo', 'star', 'star'];
+        const chosenP = pTypes[Math.floor(rng2 * pTypes.length)];
+        newObstacles.push({
+          id: groupId + '_pwr', groupId, type: 'powerup', powerUpType: chosenP,
+          x: canvasWidth + 40, y: gapY, width: 36, height: 36,
+          speedX: 0, speedY: 0, phase: 0, rotation: 0, passed: false
+        });
+      }
+    } else if (rng < 0.42) {
       for (let i = 0; i < 4; i++) {
         newObstacles.push({
           id: groupId + i, groupId, type: 'monster', monsterType: chosenType,
@@ -227,24 +243,57 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           speedX: 0, speedY: 0, rotation: 0, passed: false, phase: i * 0.5
         });
       }
-    } else if (rng < 0.6) {
+    } else if (rng < 0.55) {
+      // Rotating satellite blades or saw teeth
       const centerX = canvasWidth + 200;
       const centerY = 300 + (rng * (canvasHeight - 600));
       for (let i = 0; i < 3; i++) {
         newObstacles.push({
-          id: groupId + i, groupId, type: 'monster', monsterType: chosenType,
+          id: groupId + i, groupId, type: 'monster', monsterType: i % 2 === 0 ? 'blade' : chosenType,
           x: centerX, y: centerY, width: 70, height: 70,
           speedX: 0, speedY: 0, rotation: 0, passed: false,
           orbitCenter: { x: centerX, y: centerY },
-          orbitRadius: 100, orbitAngle: (i / 3) * Math.PI * 2,
+          orbitRadius: 105, orbitAngle: (i / 3) * Math.PI * 2,
           orbitSpeed: 0.05, phase: 0
         });
       }
-    } else if (rng < 0.75) {
+    } else if (rng < 0.68) {
       newObstacles.push({
         id: groupId, groupId, type: 'spider', monsterType: 'bloat',
         x: canvasWidth + 100, y: 0, width: 90, height: 90,
         speedX: 0, speedY: 2.5, rotation: 0, passed: false, phase: 0
+      });
+    } else if (rng < 0.80) {
+      // Horizontal laser beam hazard with warning phase
+      const laserY = 220 + (rng * (canvasHeight - 440));
+      newObstacles.push({
+        id: groupId + '_laser', groupId, type: 'laser',
+        x: canvasWidth + 100, y: laserY, width: 320, height: 26,
+        speedX: 0, speedY: 0, phase: 0, rotation: 0, passed: false,
+        laserState: 'warning', laserTimer: 0
+      });
+      // Rewarding star token above or below the laser
+      const starY = laserY > canvasHeight / 2 ? laserY - 110 : laserY + 110;
+      newObstacles.push({
+        id: groupId + '_star', groupId, type: 'powerup', powerUpType: 'star',
+        x: canvasWidth + 260, y: starY, width: 36, height: 36,
+        speedX: 0, speedY: 0, phase: 0, rotation: 0, passed: false
+      });
+    } else if (rng < 0.90) {
+      // Chaser shadow phantom swooping dynamically
+      const startY = 200 + (rng * (canvasHeight - 400));
+      newObstacles.push({
+        id: groupId + '_chaser', groupId, type: 'monster', monsterType: 'chaser',
+        x: canvasWidth + 120, y: startY, width: 95, height: 95,
+        speedX: 0, speedY: 0, phase: rng * Math.PI * 2, rotation: 0, passed: false
+      });
+      // Satellite blade companion
+      newObstacles.push({
+        id: groupId + '_blade', groupId, type: 'monster', monsterType: 'blade',
+        x: canvasWidth + 240, y: startY, width: 65, height: 65,
+        speedX: 0, speedY: 0, rotation: 0, passed: false,
+        orbitCenter: { x: canvasWidth + 240, y: startY },
+        orbitRadius: 95, orbitAngle: 0, orbitSpeed: 0.07, phase: 0
       });
     } else {
       const cx = canvasWidth + 200;
@@ -268,7 +317,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const canvas = canvasRef.current;
     if (!canvas || state !== GameState.PLAYING) return;
 
-    const currentSpeed = diffParams.speed * Math.pow(diffParams.speedMult, Math.floor(score.current / 5));
+    const speedSlowMoMult = slowMoTimer.current > 0 ? 0.55 : 1.0;
+    if (slowMoTimer.current > 0) {
+      slowMoTimer.current--;
+    }
+    const currentSpeed = diffParams.speed * Math.pow(diffParams.speedMult, Math.floor(score.current / 5)) * speedSlowMoMult;
     worldOffset.current += currentSpeed;
     if (invincibilityFrames.current > 0) invincibilityFrames.current--;
 
@@ -291,32 +344,50 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       if (bird.trail.length > 15) bird.trail.pop();
       bird.trail.forEach(p => p.alpha -= 0.025);
 
-      // ROOF COLLISION: Tightened boundary
+      // ROOF COLLISION: Tightened boundary with shield resilience
       if (bird.y < 0) {
-        particles.current.emitCollisionImpact(bird.x, 10, false);
-        if (activeMode.current !== ActiveMode.NORMAL) {
-          activeMode.current = ActiveMode.NORMAL;
-          bird.y = 50;
-          bird.vel = 1;
-          invincibilityFrames.current = 100;
-          sounds.playHit();
+        if (hasShield.current) {
+          hasShield.current = false;
+          sounds.playShieldBreak();
+          particles.current.emitShieldShatter(bird.x, 20);
+          invincibilityFrames.current = 80;
+          bird.y = 30;
+          bird.vel = 2;
         } else {
-          bird.active = false;
+          particles.current.emitCollisionImpact(bird.x, 10, false);
+          if (activeMode.current !== ActiveMode.NORMAL) {
+            activeMode.current = ActiveMode.NORMAL;
+            bird.y = 50;
+            bird.vel = 1;
+            invincibilityFrames.current = 100;
+            sounds.playHit();
+          } else {
+            bird.active = false;
+          }
         }
       }
 
-      // FLOOR COLLISION
+      // FLOOR COLLISION with shield resilience
       if (bird.y > canvas.height) {
+        if (hasShield.current) {
+          hasShield.current = false;
+          sounds.playShieldBreak();
+          particles.current.emitShieldShatter(bird.x, canvas.height - 20);
+          invincibilityFrames.current = 80;
+          bird.y = canvas.height - 30;
+          bird.vel = -2;
+        } else {
           particles.current.emitCollisionImpact(bird.x, canvas.height - 10, false);
           if (activeMode.current !== ActiveMode.NORMAL) {
-              activeMode.current = ActiveMode.NORMAL;
-              bird.y = canvas.height / 2;
-              bird.vel = 0;
-              invincibilityFrames.current = 100;
-              sounds.playHit();
+            activeMode.current = ActiveMode.NORMAL;
+            bird.y = canvas.height / 2;
+            bird.vel = 0;
+            invincibilityFrames.current = 100;
+            sounds.playHit();
           } else {
-              bird.active = false;
+            bird.active = false;
           }
+        }
       }
     });
 
@@ -347,13 +418,19 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         obs.rotation += 0.04;
       } else if (obs.type === 'spider') {
         obs.y = (canvas.height / 2) + Math.sin((worldOffset.current * 0.012)) * (canvas.height * 0.4);
+      } else if (obs.monsterType === 'chaser') {
+        obs.y += Math.sin(worldOffset.current * 0.025 + obs.phase) * 3.5;
+      } else if (obs.type === 'laser') {
+        obs.laserTimer = (obs.laserTimer || 0) + 1;
+        const cycle = obs.laserTimer % 180;
+        obs.laserState = cycle < 100 ? 'warning' : 'active';
       } else if (obs.groupId.startsWith('grp') && obs.y < 200 && obs.type === 'monster') { 
         obs.y = 80 + Math.sin(worldOffset.current * 0.02 + obs.phase) * 60;
       } else if (obs.groupId.startsWith('grp') && obs.y > canvas.height - 200 && obs.type === 'monster') {
         obs.y = canvas.height - 80 - Math.sin(worldOffset.current * 0.02 + obs.phase) * 60;
       }
 
-      if (!obs.passed && obs.x < leadBird.x) {
+      if (!obs.passed && obs.x < leadBird.x && obs.type !== 'powerup') {
         obs.passed = true;
         if (!scoredGroups.current.has(obs.groupId)) {
           scoredGroups.current.add(obs.groupId);
@@ -370,19 +447,50 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       }
 
       activeBirds.forEach(bird => {
-        if (invincibilityFrames.current > 0 && obs.type !== 'portal') return;
-
         const inflationScale = Math.max(1, 1 - (bird.vel * 0.08));
         const effectiveBirdR = BIRD_RADIUS * inflationScale;
         const dx = bird.x - obs.x;
         const dy = bird.y - obs.y;
         const distSq = dx*dx + dy*dy;
 
+        // Power-Up Collection Check
+        if (obs.type === 'powerup' && !obs.passed) {
+          if (Math.sqrt(distSq) < effectiveBirdR + (obs.width / 2)) {
+            obs.passed = true;
+            obs.x = -3000;
+            if (obs.powerUpType === 'shield') {
+              hasShield.current = true;
+              sounds.playPowerUp();
+              particles.current.emitPowerUpPickup(bird.x, bird.y, 'shield');
+            } else if (obs.powerUpType === 'slowmo') {
+              slowMoTimer.current = 360;
+              sounds.playSlowMo();
+              particles.current.emitPowerUpPickup(bird.x, bird.y, 'slowmo');
+            } else if (obs.powerUpType === 'star') {
+              score.current += 50;
+              onScoreUpdate(score.current);
+              sounds.playStarCollect();
+              particles.current.emitPowerUpPickup(bird.x, bird.y, 'star');
+            }
+            return;
+          }
+        }
+
+        if (invincibilityFrames.current > 0 && obs.type !== 'portal') return;
+
         if (obs.type === 'pillar') {
             if (bird.x + effectiveBirdR > obs.x && bird.x - effectiveBirdR < obs.x + obs.width &&
                 bird.y + effectiveBirdR > obs.y && bird.y - effectiveBirdR < obs.y + obs.height) {
                 particles.current.emitCollisionImpact(bird.x, bird.y, false);
                 handleCollision(bird);
+            }
+        } else if (obs.type === 'laser') {
+            if (obs.laserState === 'active') {
+                if (bird.x + effectiveBirdR > obs.x && bird.x - effectiveBirdR < obs.x + obs.width &&
+                    bird.y + effectiveBirdR > obs.y && bird.y - effectiveBirdR < obs.y + obs.height) {
+                    particles.current.emitCollisionImpact(bird.x, bird.y, false);
+                    handleCollision(bird);
+                }
             }
         } else if (obs.type === 'portal') {
             if (Math.sqrt(distSq) < effectiveBirdR + (obs.width / 2)) {
@@ -410,7 +518,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                     birds.current = [{ ...mainBird, active: true, trail: [] }];
                 }
             }
-        } else {
+        } else if (obs.type !== 'powerup') {
             const combinedR = effectiveBirdR + (obs.width / 2) - 10;
             if (distSq < combinedR * combinedR) {
                 particles.current.emitCollisionImpact(bird.x, bird.y, false);
@@ -427,6 +535,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   };
 
   const handleCollision = (bird: BirdEntity) => {
+      if (hasShield.current) {
+          hasShield.current = false;
+          sounds.playShieldBreak();
+          particles.current.emitShieldShatter(bird.x, bird.y);
+          invincibilityFrames.current = 90;
+          return;
+      }
       if (activeMode.current === ActiveMode.SPLIT) {
           bird.active = false;
           sounds.playHit();
@@ -469,6 +584,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         drawPillar(ctx, obs.x, obs.y, obs.width, obs.height, obs.y === 0);
       } else if (obs.type === 'portal') {
         drawPortal(ctx, obs.x, obs.y, obs.width / 2, obs.portalType!);
+      } else if (obs.type === 'powerup') {
+        drawPowerUp(ctx, obs.x, obs.y, obs.width / 2, obs.powerUpType || 'star');
+      } else if (obs.type === 'laser') {
+        drawLaser(ctx, obs.x, obs.y, obs.width, obs.height, obs.laserState || 'active');
       } else {
         drawMonster(
             ctx, obs.x, obs.y, obs.width / 2, obs.rotation, 
@@ -481,12 +600,48 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     birds.current.forEach(bird => {
       if (bird.active) {
         const opacity = (invincibilityFrames.current > 0 && Math.floor(Date.now() / 100) % 2 === 0) ? 0.3 : 1.0;
-        drawBird(ctx, bird.x, bird.y, BIRD_RADIUS, bird.vel, activeMode.current, opacity);
+        drawBird(ctx, bird.x, bird.y, BIRD_RADIUS, bird.vel, activeMode.current, opacity, hasShield.current);
       }
     });
 
     // Draw active particle effects
     particles.current.draw(ctx);
+
+    // Render power-up HUD status badges
+    if (hasShield.current || slowMoTimer.current > 0) {
+      let badgeX = 24;
+      const badgeY = 24;
+      if (hasShield.current) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(badgeX, badgeY, 120, 30, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 11px system-ui, sans-serif';
+        ctx.fillText('SHIELD ACTIVE', badgeX + 14, badgeY + 19);
+        ctx.restore();
+        badgeX += 132;
+      }
+      if (slowMoTimer.current > 0) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(badgeX, badgeY, 125, 30, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 11px system-ui, sans-serif';
+        const secs = (slowMoTimer.current / 60).toFixed(1);
+        ctx.fillText(`CHRONOS ${secs}s`, badgeX + 14, badgeY + 19);
+        ctx.restore();
+      }
+    }
 
     ctx.restore();
 

@@ -24,6 +24,10 @@ export class ParticleSystem {
     this.particles = [];
   }
 
+  public getCount(): number {
+    return this.particles.length;
+  }
+
   public emitFlapBurst(x: number, y: number, mode: ActiveMode, flapDir: number = 1) {
     let color = 'rgba(255, 255, 255, ';
     if (mode === ActiveMode.SPLIT) color = 'rgba(59, 130, 246, ';
@@ -68,7 +72,7 @@ export class ParticleSystem {
     });
   }
 
-  public emitScoreExplosion(x: number, y: number, mode: ActiveMode) {
+  public emitScoreExplosion(x: number, y: number, mode: ActiveMode = ActiveMode.NORMAL) {
     let baseColor = 'rgba(255, 215, 0, '; // Golden default
     if (mode === ActiveMode.SPLIT) baseColor = 'rgba(96, 165, 250, ';
     else if (mode === ActiveMode.MIRROR) baseColor = 'rgba(192, 132, 252, ';
@@ -203,6 +207,70 @@ export class ParticleSystem {
       life: 18,
       shape: 'ring'
     });
+  }
+
+  public emitPowerUpPickup(x: number, y: number, type: 'shield' | 'slowmo' | 'star') {
+    let color = 'rgba(56, 189, 248, '; // Cyan for shield
+    if (type === 'slowmo') color = 'rgba(52, 211, 153, '; // Emerald for slowmo
+    if (type === 'star') color = 'rgba(251, 191, 36, '; // Amber/gold for star
+
+    const count = 20;
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const speed = 2.0 + Math.random() * 4.0;
+      const life = 20 + Math.floor(Math.random() * 15);
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 3,
+        alpha: 1.0,
+        color,
+        maxLife: life,
+        life,
+        shape: type === 'star' ? 'star' : 'spark',
+        drag: 0.92,
+        gravity: -0.02
+      });
+    }
+
+    this.particles.push({
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      size: 12,
+      alpha: 1.0,
+      color,
+      maxLife: 22,
+      life: 22,
+      shape: 'ring'
+    });
+  }
+
+  public emitShieldShatter(x: number, y: number) {
+    const color = 'rgba(56, 189, 248, ';
+    for (let i = 0; i < 24; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2.5 + Math.random() * 5.0;
+      const life = 20 + Math.floor(Math.random() * 16);
+      this.particles.push({
+        x: x + (Math.random() - 0.5) * 12,
+        y: y + (Math.random() - 0.5) * 12,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 4,
+        alpha: 1.0,
+        color,
+        maxLife: life,
+        life,
+        shape: 'shard',
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: 0.2,
+        drag: 0.92
+      });
+    }
   }
 
   public update() {

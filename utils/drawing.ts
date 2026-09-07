@@ -8,11 +8,35 @@ export const drawBird = (
   radius: number, 
   velocity: number, 
   mode: ActiveMode = ActiveMode.NORMAL,
-  opacity: number = 1
+  opacity: number = 1,
+  hasShield: boolean = false
 ) => {
   ctx.save();
   ctx.globalAlpha = opacity;
   ctx.translate(x, y);
+
+  // Luminous hexagonal shield barrier aura
+  if (hasShield) {
+    const time = Date.now() * 0.005;
+    ctx.save();
+    ctx.strokeStyle = '#38bdf8';
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 14;
+    ctx.lineWidth = 2.5;
+    ctx.rotate(time);
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const r = radius * 1.5 + Math.sin(time * 2 + i) * 2;
+      if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+      else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
+    ctx.fill();
+    ctx.restore();
+  }
   
   const inflation = Math.max(1, 1 - (velocity * 0.08));
   ctx.scale(inflation, inflation);
@@ -201,6 +225,24 @@ export const drawMonster = (
   } else if (type === 'square') {
     const r = radius * 1.1;
     ctx.rect(-r, -r, r * 2, r * 2);
+  } else if (type === 'blade') {
+    // 4-point razor shuriken
+    const points = 4;
+    for (let i = 0; i < points * 2; i++) {
+      const angle = (i / (points * 2)) * Math.PI * 2;
+      const r = i % 2 === 0 ? radius * 1.35 : radius * 0.45;
+      ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+    }
+  } else if (type === 'chaser') {
+    // Shadow winged phantom silhouette
+    const wings = Math.sin(Date.now() * 0.015) * 0.3;
+    ctx.moveTo(0, -radius * 0.6);
+    ctx.bezierCurveTo(radius * 0.8, -radius * (1.2 + wings), radius * 1.5, -radius * 0.2, radius * 1.3, radius * 0.6);
+    ctx.lineTo(radius * 0.3, radius * 0.2);
+    ctx.lineTo(0, radius * 0.8);
+    ctx.lineTo(-radius * 0.3, radius * 0.2);
+    ctx.lineTo(-radius * 1.3, radius * 0.6);
+    ctx.bezierCurveTo(-radius * 1.5, -radius * 0.2, -radius * 0.8, -radius * (1.2 + wings), 0, -radius * 0.6);
   } else {
     const teeth = 16;
     for (let i = 0; i < teeth * 2; i++) {
@@ -320,3 +362,165 @@ function drawSilhouettes(ctx: CanvasRenderingContext2D, w: number, h: number, of
         }
     }
 }
+
+export const drawPowerUp = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  type: 'shield' | 'slowmo' | 'star'
+) => {
+  ctx.save();
+  ctx.translate(x, y);
+  const time = Date.now() * 0.004;
+  const floatY = Math.sin(time * 3) * 4;
+  ctx.translate(0, floatY);
+
+  if (type === 'shield') {
+    // Glowing Cyan Shield Rune
+    const color = '#38bdf8';
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.rotate(time);
+    // Outer hexagon
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const r = radius * 0.9;
+      if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+      else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+    ctx.fill();
+
+    // Inner shield emblem
+    ctx.rotate(-time * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(0, -radius * 0.5);
+    ctx.lineTo(radius * 0.45, -radius * 0.2);
+    ctx.lineTo(radius * 0.35, radius * 0.35);
+    ctx.lineTo(0, radius * 0.55);
+    ctx.lineTo(-radius * 0.35, radius * 0.35);
+    ctx.lineTo(-radius * 0.45, -radius * 0.2);
+    ctx.closePath();
+    ctx.fill();
+  } else if (type === 'slowmo') {
+    // Chronos Emerald Hourglass / Dial
+    const color = '#34d399';
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+
+    // Outer clock ring with ticks
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * 0.85, 0, Math.PI * 2);
+    ctx.stroke();
+
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * radius * 0.7, Math.sin(a) * radius * 0.7);
+      ctx.lineTo(Math.cos(a) * radius * 0.85, Math.sin(a) * radius * 0.85);
+      ctx.stroke();
+    }
+
+    // Hourglass center
+    ctx.rotate(time * 1.5);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(-radius * 0.4, -radius * 0.45);
+    ctx.lineTo(radius * 0.4, -radius * 0.45);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(radius * 0.4, radius * 0.45);
+    ctx.lineTo(-radius * 0.4, radius * 0.45);
+    ctx.lineTo(0, 0);
+    ctx.closePath();
+    ctx.fill();
+  } else if (type === 'star') {
+    // Golden Star Essence
+    const color = '#fbbf24';
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 18;
+    ctx.rotate(time * 2);
+    ctx.fillStyle = color;
+
+    // 5-point star
+    ctx.beginPath();
+    const points = 5;
+    for (let i = 0; i < points * 2; i++) {
+      const a = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
+      const r = i % 2 === 0 ? radius * 0.9 : radius * 0.4;
+      if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+      else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Center white spark
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+};
+
+export const drawLaser = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  state: 'warning' | 'active' = 'active'
+) => {
+  ctx.save();
+  if (state === 'warning') {
+    // Warning dotted line with warning indicators
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.45)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 8]);
+    ctx.beginPath();
+    ctx.moveTo(x, y + height / 2);
+    ctx.lineTo(x + width, y + height / 2);
+    ctx.stroke();
+
+    // Pulsing warning diamond emitter nodes at ends
+    const time = Date.now() * 0.01;
+    const pulse = 4 + Math.sin(time) * 3;
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(x - pulse, y + height / 2 - pulse, pulse * 2, pulse * 2);
+    ctx.fillRect(x + width - pulse, y + height / 2 - pulse, pulse * 2, pulse * 2);
+  } else {
+    // Fully active laser beam
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 20;
+
+    // Outer glow
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+    ctx.fillRect(x, y, width, height);
+
+    // Mid laser beam
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(x, y + height * 0.25, width, height * 0.5);
+
+    // Inner bright white core
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x, y + height * 0.4, width, height * 0.2);
+
+    // Node emitters
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(x - 8, y - 6, 16, height + 12);
+    ctx.fillRect(x + width - 8, y - 6, 16, height + 12);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(x - 4, y, 8, height);
+    ctx.fillRect(x + width - 4, y, 8, height);
+  }
+  ctx.restore();
+};

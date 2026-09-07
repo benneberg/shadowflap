@@ -29,14 +29,26 @@ export interface Point {
   y: number;
 }
 
-export type MonsterType = 'saw' | 'gear' | 'bloat' | 'square';
+export type MonsterType = 'saw' | 'gear' | 'bloat' | 'square' | 'chaser' | 'blade';
+
+export type PowerUpType = 'shield' | 'slowmo' | 'star';
+
+export type ObstacleType = 'pillar' | 'monster' | 'spider' | 'portal' | 'powerup' | 'laser';
+
+export interface ActivePowerUps {
+  hasShield: boolean;
+  slowMoRemaining: number;
+}
 
 export interface Obstacle {
   id: string;
   groupId: string;
-  type: 'pillar' | 'monster' | 'spider' | 'portal';
+  type: ObstacleType;
   portalType?: ActiveMode;
   monsterType?: MonsterType;
+  powerUpType?: PowerUpType;
+  laserState?: 'warning' | 'active';
+  laserTimer?: number;
   x: number;
   y: number;
   width: number;
