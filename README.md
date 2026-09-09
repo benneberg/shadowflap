@@ -61,6 +61,17 @@ npm run preview
 
 ---
 
+## 🌐 GitHub Pages Deployment
+
+The repository includes an automated GitHub Actions workflow (`.github/workflows/ci.yml`) that validates types (`npm run lint`), runs unit tests (`npm test`), builds the production bundle (`npm run build`), and automatically deploys to **GitHub Pages** on pushes to `main` or `master`.
+
+To activate GitHub Pages in your repository:
+1. Go to your GitHub repository **Settings** -> **Pages**.
+2. Under **Build and deployment** > **Source**, select **GitHub Actions**.
+3. Push to `main` or `master` (or run the workflow manually via **Actions** -> **Run workflow**).
+
+---
+
 ## 🐳 Docker Deployment
 
 Build and run using the lightweight, unprivileged multi-stage container:
