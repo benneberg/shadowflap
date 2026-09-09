@@ -11,7 +11,7 @@
 A high-octane dark silhouette arcade precision flapper built with React 19, TypeScript, and HTML5 Canvas. Dodge lurking shadow monsters, master shifting dimensional portals (Split, Mirror, Gravity Inversion), and compete across procedural endless runs and synchronized daily tracks.
 
 ---
-## Play the game
+## Play game demo
 https://benneberg.github.io/shadowflap/
 
 ## Features
