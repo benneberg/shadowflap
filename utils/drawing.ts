@@ -85,33 +85,118 @@ export const drawPortal = (ctx: CanvasRenderingContext2D, x: number, y: number, 
   ctx.translate(x, y);
   
   const time = Date.now() * 0.005;
-  const pulse = Math.sin(time) * 8;
+  const pulse = Math.sin(time) * 6;
   
-  let color = '#fff';
+  let color = '#ffffff';
   if (mode === ActiveMode.SPLIT) color = '#3b82f6';
   if (mode === ActiveMode.MIRROR) color = '#a855f7';
   if (mode === ActiveMode.GRAVITY) color = '#f97316';
 
   ctx.strokeStyle = color;
-  ctx.lineWidth = 5;
-  ctx.shadowBlur = 20;
+  ctx.shadowBlur = 24;
   ctx.shadowColor = color;
   
-  // Outer spinning ring
-  ctx.rotate(time * 0.5);
-  ctx.setLineDash([10, 5]);
+  // Outer swirling spiral vortex aura
+  ctx.save();
+  ctx.rotate(time * 0.8);
+  ctx.lineWidth = 4;
+  ctx.setLineDash([12, 6]);
   ctx.beginPath();
   ctx.arc(0, 0, radius + pulse, 0, Math.PI * 2);
   ctx.stroke();
+  ctx.restore();
 
-  // Inner pulsing ring
-  ctx.setLineDash([]);
-  ctx.lineWidth = 3;
+  // Middle counter-rotating ring with energy notches
+  ctx.save();
   ctx.rotate(-time * 1.2);
+  ctx.lineWidth = 3;
+  ctx.setLineDash([6, 8]);
   ctx.beginPath();
-  ctx.arc(0, 0, (radius * 0.6) - pulse * 0.5, 0, Math.PI * 2);
+  ctx.arc(0, 0, radius * 0.75 - pulse * 0.3, 0, Math.PI * 2);
   ctx.stroke();
-  
+  ctx.restore();
+
+  // Dimensional vortex interior gradient glow
+  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+  grad.addColorStop(0, color);
+  grad.addColorStop(0.3, `${color}66`);
+  grad.addColorStop(0.7, `${color}22`);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Center dimensional mode glyph
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2.5;
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = '#ffffff';
+
+  if (mode === ActiveMode.SPLIT) {
+    // 3 split orbiting nodes
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 + time;
+      const ox = Math.cos(a) * (radius * 0.32);
+      const oy = Math.sin(a) * (radius * 0.32);
+      ctx.beginPath();
+      ctx.arc(ox, oy, radius * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (mode === ActiveMode.MIRROR) {
+    // Opposing mirror chevron glyphs: < | >
+    ctx.beginPath();
+    ctx.moveTo(0, -radius * 0.38);
+    ctx.lineTo(0, radius * 0.38);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-radius * 0.28, -radius * 0.2);
+    ctx.lineTo(-radius * 0.1, 0);
+    ctx.lineTo(-radius * 0.28, radius * 0.2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(radius * 0.28, -radius * 0.2);
+    ctx.lineTo(radius * 0.1, 0);
+    ctx.lineTo(radius * 0.28, radius * 0.2);
+    ctx.stroke();
+  } else if (mode === ActiveMode.GRAVITY) {
+    // Inverted double arrow gravity glyph
+    const arrowH = radius * 0.38;
+    const arrowW = radius * 0.24;
+    // Up arrow
+    ctx.beginPath();
+    ctx.moveTo(0, -arrowH);
+    ctx.lineTo(-arrowW, -arrowH * 0.4);
+    ctx.lineTo(-arrowW * 0.4, -arrowH * 0.4);
+    ctx.lineTo(-arrowW * 0.4, 0);
+    ctx.lineTo(arrowW * 0.4, 0);
+    ctx.lineTo(arrowW * 0.4, -arrowH * 0.4);
+    ctx.lineTo(arrowW, -arrowH * 0.4);
+    ctx.closePath();
+    ctx.fill();
+    // Down arrow
+    ctx.beginPath();
+    ctx.moveTo(0, arrowH);
+    ctx.lineTo(-arrowW, arrowH * 0.4);
+    ctx.lineTo(-arrowW * 0.4, arrowH * 0.4);
+    ctx.lineTo(-arrowW * 0.4, 0);
+    ctx.lineTo(arrowW * 0.4, 0);
+    ctx.lineTo(arrowW * 0.4, arrowH * 0.4);
+    ctx.lineTo(arrowW, arrowH * 0.4);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    // Normal core
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * 0.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
   ctx.restore();
 };
 
@@ -182,24 +267,37 @@ export const drawMonster = (
   ctx.translate(x, y);
 
   if (isSpider) {
-      ctx.strokeStyle = '#222';
-      ctx.lineWidth = 1;
+      // Solid black silk suspension thread matching all-black trap aesthetic
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(0, -y);
       ctx.stroke();
 
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 3;
+      // 8 Articulated jointed silhouette spider legs with sharp clawed tips
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const time = Date.now() * 0.008;
       for (let i = 0; i < 8; i++) {
-          const side = i < 4 ? -1 : 1;
-          const angle = (i % 4) * 0.4 - 0.6;
+          const isLeft = i < 4;
+          const side = isLeft ? -1 : 1;
+          const legIdx = i % 4;
+          const cycleOffset = legIdx * 0.5;
+          const twitch = Math.sin(time + cycleOffset) * 12;
+
+          const hipX = side * radius * 0.6;
+          const hipY = (legIdx - 1.5) * 8;
+          const kneeX = side * (radius * 1.5 + legIdx * 4);
+          const kneeY = hipY - 14 + twitch;
+          const footX = side * (radius * 1.8 + legIdx * 6);
+          const footY = hipY + 22 + (twitch * 0.5);
+
           ctx.beginPath();
-          ctx.moveTo(side * radius * 0.8, 0);
-          const midX = side * radius * 1.5;
-          const midY = Math.sin(Date.now() * 0.01 + i) * 10 - 10;
-          ctx.lineTo(midX, midY);
-          ctx.lineTo(side * radius * 1.8, 20);
+          ctx.moveTo(hipX, hipY);
+          ctx.lineTo(kneeX, kneeY);
+          ctx.lineTo(footX, footY);
           ctx.stroke();
       }
   }
@@ -209,67 +307,190 @@ export const drawMonster = (
   ctx.beginPath();
 
   if (type === 'gear') {
-    const teeth = 10;
-    for (let i = 0; i < teeth * 2; i++) {
-      const angle = (i / teeth) * Math.PI;
-      const r = i % 2 === 0 ? radius : radius * 0.8;
-      ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+    // Heavy industrial silhouette cog with 8 rectangular notched teeth
+    const teeth = 8;
+    for (let i = 0; i < teeth; i++) {
+      const a1 = (i / teeth) * Math.PI * 2;
+      const a2 = a1 + (Math.PI / teeth) * 0.35;
+      const a3 = a1 + (Math.PI / teeth) * 0.75;
+      const a4 = a1 + (Math.PI / teeth) * 1.0;
+      const rOuter = radius * 1.15;
+      const rInner = radius * 0.8;
+
+      if (i === 0) ctx.moveTo(Math.cos(a1) * rInner, Math.sin(a1) * rInner);
+      else ctx.lineTo(Math.cos(a1) * rInner, Math.sin(a1) * rInner);
+      ctx.lineTo(Math.cos(a2) * rOuter, Math.sin(a2) * rOuter);
+      ctx.lineTo(Math.cos(a3) * rOuter, Math.sin(a3) * rOuter);
+      ctx.lineTo(Math.cos(a4) * rInner, Math.sin(a4) * rInner);
     }
   } else if (type === 'bloat') {
-    const spikes = 20;
-    for (let i = 0; i < spikes; i++) {
-      const angle = (i / spikes) * Math.PI * 2;
-      const r = radius * (1 + (i % 2 === 0 ? 0.15 : 0));
-      ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+    // Spiked shadow urchin with 20 razor needle spines pulsing in menace
+    const spines = 20;
+    const pulseScale = 1 + Math.sin(Date.now() * 0.007) * 0.06;
+    for (let i = 0; i < spines * 2; i++) {
+      const angle = (i / (spines * 2)) * Math.PI * 2;
+      const isTip = i % 2 === 0;
+      const r = isTip ? radius * 1.25 * pulseScale : radius * 0.72;
+      if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+      else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
     }
   } else if (type === 'square') {
-    const r = radius * 1.1;
-    ctx.rect(-r, -r, r * 2, r * 2);
+    // Jagged Monolith Brute - Spiked fortress monster with perimeter saw-teeth and corner horns
+    const half = radius * 0.85;
+    const teethPerSide = 3;
+    
+    // Top side with saw teeth
+    ctx.moveTo(-half - 12, -half - 12); // Top-left corner horn tip
+    ctx.lineTo(-half, -half);
+    for (let i = 1; i <= teethPerSide; i++) {
+      const segStart = -half + ((i - 1) / teethPerSide) * (half * 2);
+      const segMid = segStart + (half / teethPerSide);
+      const segEnd = -half + (i / teethPerSide) * (half * 2);
+      ctx.lineTo(segMid, -half - 12);
+      ctx.lineTo(segEnd, -half);
+    }
+    // Top-right corner horn
+    ctx.lineTo(half + 12, -half - 12);
+    ctx.lineTo(half, -half);
+
+    // Right side with saw teeth
+    for (let i = 1; i <= teethPerSide; i++) {
+      const segStart = -half + ((i - 1) / teethPerSide) * (half * 2);
+      const segMid = segStart + (half / teethPerSide);
+      const segEnd = -half + (i / teethPerSide) * (half * 2);
+      ctx.lineTo(half + 12, segMid);
+      ctx.lineTo(half, segEnd);
+    }
+    // Bottom-right corner horn
+    ctx.lineTo(half + 12, half + 12);
+    ctx.lineTo(half, half);
+
+    // Bottom side with saw teeth
+    for (let i = 1; i <= teethPerSide; i++) {
+      const segStart = half - ((i - 1) / teethPerSide) * (half * 2);
+      const segMid = segStart - (half / teethPerSide);
+      const segEnd = half - (i / teethPerSide) * (half * 2);
+      ctx.lineTo(segMid, half + 12);
+      ctx.lineTo(segEnd, half);
+    }
+    // Bottom-left corner horn
+    ctx.lineTo(-half - 12, half + 12);
+    ctx.lineTo(-half, half);
+
+    // Left side with saw teeth
+    for (let i = 1; i <= teethPerSide; i++) {
+      const segStart = half - ((i - 1) / teethPerSide) * (half * 2);
+      const segMid = segStart - (half / teethPerSide);
+      const segEnd = half - (i / teethPerSide) * (half * 2);
+      ctx.lineTo(-half - 12, segMid);
+      ctx.lineTo(-half, segEnd);
+    }
   } else if (type === 'blade') {
-    // 4-point razor shuriken
-    const points = 4;
-    for (let i = 0; i < points * 2; i++) {
-      const angle = (i / (points * 2)) * Math.PI * 2;
-      const r = i % 2 === 0 ? radius * 1.35 : radius * 0.45;
-      ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+    // 6-point curved razor scythe star with solid black hub
+    const points = 6;
+    const rHub = radius * 0.7;
+    const rTip = radius * 1.35;
+    for (let i = 0; i < points; i++) {
+      const aBase = (i / points) * Math.PI * 2;
+      const aTip = aBase + (Math.PI / points) * 0.7;
+      const aReturn = aBase + (Math.PI / points) * 1.2;
+
+      if (i === 0) ctx.moveTo(Math.cos(aBase) * rHub, Math.sin(aBase) * rHub);
+      else ctx.lineTo(Math.cos(aBase) * rHub, Math.sin(aBase) * rHub);
+
+      // Curved cutting edge outward to razor tip
+      ctx.quadraticCurveTo(
+        Math.cos(aTip - 0.2) * (rTip * 0.9), 
+        Math.sin(aTip - 0.2) * (rTip * 0.9), 
+        Math.cos(aTip) * rTip, 
+        Math.sin(aTip) * rTip
+      );
+      // Curved return to hub
+      ctx.quadraticCurveTo(
+        Math.cos(aReturn) * (rHub * 1.1), 
+        Math.sin(aReturn) * (rHub * 1.1), 
+        Math.cos(aReturn) * rHub, 
+        Math.sin(aReturn) * rHub
+      );
     }
   } else if (type === 'chaser') {
-    // Shadow winged phantom silhouette
-    const wings = Math.sin(Date.now() * 0.015) * 0.3;
-    ctx.moveTo(0, -radius * 0.6);
-    ctx.bezierCurveTo(radius * 0.8, -radius * (1.2 + wings), radius * 1.5, -radius * 0.2, radius * 1.3, radius * 0.6);
-    ctx.lineTo(radius * 0.3, radius * 0.2);
-    ctx.lineTo(0, radius * 0.8);
-    ctx.lineTo(-radius * 0.3, radius * 0.2);
-    ctx.lineTo(-radius * 1.3, radius * 0.6);
-    ctx.bezierCurveTo(-radius * 1.5, -radius * 0.2, -radius * 0.8, -radius * (1.2 + wings), 0, -radius * 0.6);
+    // Shadow Gargoyle / Winged Demon silhouette in pure black
+    const wingFlap = Math.sin(Date.now() * 0.015) * 0.25;
+    
+    // Head with sharp demonic horns
+    ctx.moveTo(0, -radius * 0.4);
+    ctx.lineTo(radius * 0.2, -radius * 0.95); // Right horn tip
+    ctx.lineTo(radius * 0.1, -radius * 0.4);
+
+    // Right bat wing with sharp claw joint and scalloped trailing edge
+    ctx.quadraticCurveTo(radius * 0.8, -radius * (1.3 + wingFlap), radius * 1.6, -radius * (0.6 + wingFlap)); // Wingtip claw
+    ctx.lineTo(radius * 1.2, -radius * 0.1);
+    ctx.lineTo(radius * 1.0, -radius * 0.4);
+    ctx.lineTo(radius * 0.7, 0);
+    ctx.lineTo(radius * 0.4, -radius * 0.15);
+
+    // Torso down to barbed tail stinger
+    ctx.lineTo(radius * 0.3, radius * 0.5);
+    ctx.lineTo(radius * 0.1, radius * 1.1); // Tail tip
+    ctx.lineTo(0, radius * 1.3); // Stinger point
+    ctx.lineTo(-radius * 0.1, radius * 1.1);
+    ctx.lineTo(-radius * 0.3, radius * 0.5);
+
+    // Left bat wing
+    ctx.lineTo(-radius * 0.4, -radius * 0.15);
+    ctx.lineTo(-radius * 0.7, 0);
+    ctx.lineTo(-radius * 1.0, -radius * 0.4);
+    ctx.lineTo(-radius * 1.2, -radius * 0.1);
+    ctx.quadraticCurveTo(-radius * 1.6, -radius * (0.6 + wingFlap), -radius * 0.8, -radius * (1.3 + wingFlap)); // Left wingtip claw
+
+    // Left horn
+    ctx.lineTo(-radius * 0.1, -radius * 0.4);
+    ctx.lineTo(-radius * 0.2, -radius * 0.95); // Left horn tip
+    ctx.lineTo(0, -radius * 0.4);
   } else {
+    // Classic Shadow Buzzsaw - 16 aggressive triangular saw teeth
     const teeth = 16;
     for (let i = 0; i < teeth * 2; i++) {
       const angle = (i / teeth) * Math.PI;
-      const r = i % 2 === 0 ? radius : radius * 0.65;
-      ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+      const r = i % 2 === 0 ? radius * 1.12 : radius * 0.7;
+      if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+      else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
     }
   }
 
   ctx.closePath();
   ctx.fill();
 
-  // Eye
+  // Signature menacing tracking eye - shared across all black shadow monsters
   ctx.rotate(-rotation);
   const dx = birdX - x;
   const dy = birdY - y;
-  const dist = Math.sqrt(dx * dx + dy * dy);
+  const dist = Math.hypot(dx, dy);
   const angleToBird = Math.atan2(dy, dx);
+  
+  // Proportional white sclera firmly nested within the solid black body
+  const eyeR = radius * (type === 'chaser' ? 0.32 : type === 'square' ? 0.36 : 0.4);
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  ctx.arc(0, 0, radius * 0.45, 0, Math.PI * 2);
+  ctx.arc(0, 0, eyeR, 0, Math.PI * 2);
   ctx.fill();
-  const px = Math.cos(angleToBird) * Math.min(radius * 0.2, dist * 0.05);
-  const py = Math.sin(angleToBird) * Math.min(radius * 0.2, dist * 0.05);
+  
+  // Menacing tracking black pupil looking directly at the bird
+  const maxPupilOffset = eyeR * 0.42;
+  const pupilDist = Math.min(maxPupilOffset, dist * 0.04);
+  const px = Math.cos(angleToBird) * pupilDist;
+  const py = Math.sin(angleToBird) * pupilDist;
+  const pupilR = eyeR * 0.45;
+  
   ctx.fillStyle = '#000000';
   ctx.beginPath();
-  ctx.arc(px, py, radius * 0.18, 0, Math.PI * 2);
+  ctx.arc(px, py, pupilR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Specular glint for animated life
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(px - pupilR * 0.35, py - pupilR * 0.35, pupilR * 0.32, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();

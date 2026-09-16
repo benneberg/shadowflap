@@ -170,32 +170,29 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         return;
     }
 
-    const PORTAL_FREQ = mode === GameMode.MASTER ? 5 : 8;
+    // Portals spawn significantly more frequently so players regularly experience dimensional mechanics
+    const PORTAL_FREQ = mode === GameMode.MASTER ? 2 : 3;
     const currentThresh = Math.floor(score.current / PORTAL_FREQ);
     const lastThresh = Math.floor(lastPortalScore.current / PORTAL_FREQ);
+    const hasPortalOnScreen = obstacles.current.some(o => o.type === 'portal');
     
-    if (currentThresh > lastThresh && score.current > 0) {
+    // Spawn portal when reaching score interval or with high dynamic chance when none on screen
+    const shouldSpawnPortal = (currentThresh > lastThresh && score.current > 0) || 
+                              (!hasPortalOnScreen && score.current >= 3 && rng < 0.25);
+    
+    if (shouldSpawnPortal && !hasPortalOnScreen) {
       lastPortalScore.current = score.current;
-      const savedHighScore = parseInt(localStorage.getItem('shadow_flap_highscore') || '0');
       
-      let availableModes: ActiveMode[] = [ActiveMode.NORMAL];
-      
-      if (mode === GameMode.MASTER) {
-          availableModes = [ActiveMode.SPLIT, ActiveMode.MIRROR, ActiveMode.GRAVITY, ActiveMode.NORMAL];
-      } else {
-          if (savedHighScore >= 1000) availableModes = [ActiveMode.SPLIT, ActiveMode.MIRROR, ActiveMode.GRAVITY, ActiveMode.NORMAL];
-          else if (savedHighScore >= 500) availableModes = [ActiveMode.SPLIT, ActiveMode.MIRROR, ActiveMode.NORMAL];
-          else if (savedHighScore >= 100) availableModes = [ActiveMode.SPLIT, ActiveMode.NORMAL];
-      }
-
-      const filteredModes = availableModes.filter(m => m !== activeMode.current);
+      const allModes: ActiveMode[] = [ActiveMode.SPLIT, ActiveMode.MIRROR, ActiveMode.GRAVITY, ActiveMode.NORMAL];
+      // Always rotate to a mode different from current so every portal causes a dimension shift
+      const filteredModes = allModes.filter(m => m !== activeMode.current);
       const portalToSpawn = filteredModes.length > 0 
         ? filteredModes[Math.floor(rng * filteredModes.length)] 
-        : availableModes[Math.floor(rng * availableModes.length)];
+        : ActiveMode.SPLIT;
 
       newObstacles.push({
           id: groupId + '_portal', groupId, type: 'portal', portalType: portalToSpawn,
-          x: canvasWidth + 250, y: 150 + (rng * (canvasHeight - 300)), width: 160, height: 160,
+          x: canvasWidth + 220, y: 160 + (rng * (canvasHeight - 320)), width: 155, height: 155,
           speedX: 0, speedY: 0, phase: 0, rotation: 0, passed: false
       });
       obstacles.current.push(...newObstacles);
@@ -203,9 +200,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     }
 
     if (rng < 0.12) {
+      // Giant silhouette brute monster (always matching chosenType)
       newObstacles.push({
-        id: groupId, groupId, type: 'monster', monsterType: 'square',
-        x: canvasWidth + 200, y: canvasHeight / 2, width: 250, height: 250,
+        id: groupId, groupId, type: 'monster', monsterType: chosenType,
+        x: canvasWidth + 200, y: canvasHeight / 2, width: 240, height: 240,
         speedX: 0, speedY: 1, phase: 0, rotation: 0, passed: false
       });
     } else if (rng < 0.28) {
@@ -231,6 +229,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         });
       }
     } else if (rng < 0.42) {
+      // Tunnel wave of 4 top and 4 bottom monsters - ALL strictly identical chosenType
       for (let i = 0; i < 4; i++) {
         newObstacles.push({
           id: groupId + i, groupId, type: 'monster', monsterType: chosenType,
@@ -244,22 +243,23 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         });
       }
     } else if (rng < 0.55) {
-      // Rotating satellite blades or saw teeth
+      // Rotating satellite cluster of 4 monsters - ALL strictly identical chosenType (no mixing!)
       const centerX = canvasWidth + 200;
       const centerY = 300 + (rng * (canvasHeight - 600));
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 4; i++) {
         newObstacles.push({
-          id: groupId + i, groupId, type: 'monster', monsterType: i % 2 === 0 ? 'blade' : chosenType,
+          id: groupId + i, groupId, type: 'monster', monsterType: chosenType,
           x: centerX, y: centerY, width: 70, height: 70,
           speedX: 0, speedY: 0, rotation: 0, passed: false,
           orbitCenter: { x: centerX, y: centerY },
-          orbitRadius: 105, orbitAngle: (i / 3) * Math.PI * 2,
-          orbitSpeed: 0.05, phase: 0
+          orbitRadius: 110, orbitAngle: (i / 4) * Math.PI * 2,
+          orbitSpeed: 0.045, phase: 0
         });
       }
     } else if (rng < 0.68) {
+      // Spider hazard
       newObstacles.push({
-        id: groupId, groupId, type: 'spider', monsterType: 'bloat',
+        id: groupId, groupId, type: 'spider', monsterType: chosenType,
         x: canvasWidth + 100, y: 0, width: 90, height: 90,
         speedX: 0, speedY: 2.5, rotation: 0, passed: false, phase: 0
       });
@@ -280,22 +280,22 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         speedX: 0, speedY: 0, phase: 0, rotation: 0, passed: false
       });
     } else if (rng < 0.90) {
-      // Chaser shadow phantom swooping dynamically
+      // Swooping tandem hazard - BOTH monsters strictly identical chosenType
       const startY = 200 + (rng * (canvasHeight - 400));
       newObstacles.push({
-        id: groupId + '_chaser', groupId, type: 'monster', monsterType: 'chaser',
-        x: canvasWidth + 120, y: startY, width: 95, height: 95,
+        id: groupId + '_lead', groupId, type: 'monster', monsterType: chosenType,
+        x: canvasWidth + 120, y: startY, width: 85, height: 85,
         speedX: 0, speedY: 0, phase: rng * Math.PI * 2, rotation: 0, passed: false
       });
-      // Satellite blade companion
       newObstacles.push({
-        id: groupId + '_blade', groupId, type: 'monster', monsterType: 'blade',
-        x: canvasWidth + 240, y: startY, width: 65, height: 65,
+        id: groupId + '_wing', groupId, type: 'monster', monsterType: chosenType,
+        x: canvasWidth + 240, y: startY, width: 85, height: 85,
         speedX: 0, speedY: 0, rotation: 0, passed: false,
         orbitCenter: { x: canvasWidth + 240, y: startY },
         orbitRadius: 95, orbitAngle: 0, orbitSpeed: 0.07, phase: 0
       });
     } else {
+      // Orbiting ring of 4 monsters - ALL 4 strictly identical chosenType
       const cx = canvasWidth + 200;
       const cy = canvasHeight / 2;
       for (let i = 0; i < 4; i++) {
@@ -418,7 +418,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         obs.rotation += 0.04;
       } else if (obs.type === 'spider') {
         obs.y = (canvas.height / 2) + Math.sin((worldOffset.current * 0.012)) * (canvas.height * 0.4);
-      } else if (obs.monsterType === 'chaser') {
+      } else if (obs.monsterType === 'chaser' || (obs.phase !== 0 && !obs.orbitCenter && obs.type === 'monster' && obs.y >= 200 && obs.y <= canvas.height - 200)) {
         obs.y += Math.sin(worldOffset.current * 0.025 + obs.phase) * 3.5;
       } else if (obs.type === 'laser') {
         obs.laserTimer = (obs.laserTimer || 0) + 1;
