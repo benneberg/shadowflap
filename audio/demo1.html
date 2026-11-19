@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090c" />
+  <title>SHADOWFLAP // Echo Engine Sound Lab</title>
+  <style>
+    :root {
+      --bg-deep: #07080b;
+      --bg-panel: #101218;
+      --bg-card: #161922;
+      --border: #252a38;
+      --border-hi: #384157;
+      --text-main: #e2e6f0;
+      --text-muted: #7f889f;
+      --accent: #b886ff;
+      --accent-dim: rgba(184, 134, 255, 0.16);
+      --cyan: #38e2c7;
+      --cyan-dim: rgba(56, 226, 199, 0.15);
+      --danger: #ff4d6d;
+      --warn: #f59e0b;
+      --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-deep);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 760px;
+      margin: 0 auto;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+
+    /* TOP HEADER & TRANSPORT */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: var(--bg-deep);
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4b5563;
+      box-shadow: 0 0 0 rgba(56, 226, 199, 0);
+      transition: all 0.25s ease;
+    }
+    .status-dot.active {
+      background: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan);
+    }
+
+    .brand-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .transport-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border-hi);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-power {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+      min-width: 96px;
+    }
+
+    .btn-power.running {
+      background: rgba(56, 226, 199, 0.18);
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    /* VISUALIZER & SEED BAR */
+    .scope-bar {
+      position: relative;
+      height: 78px;
+      background: #050608;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #scopeCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .scope-overlay {
+      position: absolute;
+      top: 6px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .seed-pill {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      background: rgba(16, 18, 24, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 2px 4px 2px 8px;
+      gap: 6px;
+      backdrop-filter: blur(4px);
+    }
+
+    .seed-pill span {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .seed-input {
+      background: transparent;
+      border: none;
+      color: var(--cyan);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      width: 92px;
+      outline: none;
+      user-select: text;
+    }
+
+    .btn-mini {
+      padding: 3px 7px;
+      font-size: 10px;
+      border-radius: 4px;
+    }
+
+    .telemetry {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      background: rgba(16, 18, 24, 0.75);
+      padding: 3px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    /* SCROLLABLE WORKSPACE */
+    .workspace {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .tab-pane {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tab-pane.active {
+      display: flex;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    /* 2D XY MACRO PAD */
+    .xy-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .xy-pad {
+      position: relative;
+      width: 100%;
+      height: 175px;
+      background:
+        radial-gradient(circle at center, rgba(184, 134, 255, 0.08) 0%, transparent 70%),
+        linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 20% 20%, 20% 20%;
+      background-color: #090b10;
+      border: 1px solid var(--border-hi);
+      border-radius: 8px;
+      touch-action: none;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    .xy-axis-label {
+      position: absolute;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-muted);
+      pointer-events: none;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .xy-axis-x { bottom: 6px; right: 8px; }
+    .xy-axis-y { top: 6px; left: 8px; }
+
+    .xy-puck {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      margin-left: -13px;
+      margin-top: -13px;
+      border-radius: 50%;
+      background: rgba(184, 134, 255, 0.25);
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 16px var(--accent);
+      pointer-events: none;
+      left: 20%;
+      top: 75%;
+    }
+
+    /* EVENT TRIGGER GRID */
+    .event-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .btn-event {
+      padding: 11px 6px;
+      font-size: 10px;
+      text-align: center;
+      background: #12151e;
+      border: 1px solid var(--border-hi);
+      color: var(--text-main);
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-event:active, .btn-event.flash {
+      border-color: var(--cyan);
+      background: var(--cyan-dim);
+      color: var(--cyan);
+    }
+
+    .btn-event.danger:active, .btn-event.danger.flash {
+      border-color: var(--danger);
+      background: rgba(255, 77, 109, 0.2);
+      color: var(--danger);
+    }
+
+    /* SLIDER CONTROLS */
+    .control-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 14px;
+    }
+
+    @media (max-width: 420px) {
+      .control-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .param-row {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .param-label {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .param-name {
+      color: var(--text-main);
+    }
+
+    .param-val {
+      color: var(--cyan);
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 24px;
+      background: transparent;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 3px;
+      background: #0a0c12;
+      border: 1px solid var(--border-hi);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid #fff;
+      margin-top: -8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    }
+
+    select {
+      background: #0a0c12;
+      color: var(--text-main);
+      border: 1px solid var(--border-hi);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      width: 100%;
+      outline: none;
+    }
+
+    /* PRESETS & JSON */
+    .preset-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .json-box {
+      width: 100%;
+      height: 120px;
+      background: #080a0f;
+      border: 1px solid var(--border-hi);
+      border-radius: 6px;
+      color: var(--cyan);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 8px;
+      resize: none;
+      user-select: text;
+    }
+
+    /* BOTTOM MOBILE NAVIGATION */
+    .bottom-nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background: var(--bg-deep);
+      border-top: 1px solid var(--border);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      flex-shrink: 0;
+    }
+
+    .nav-tab {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 12px 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border-top: 2px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .nav-tab.active {
+      color: var(--accent);
+      border-top-color: var(--accent);
+      background: rgba(184, 134, 255, 0.06);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 62px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--accent);
+      color: #07080b;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s ease;
+      z-index: 100;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- HEADER / MASTER TRANSPORT -->
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-title">
+        <span id="statusDot" class="status-dot"></span>
+        ECHO ENGINE // LAB
+      </div>
+      <div class="brand-sub">Shadowflap Procedural Audio v1.0</div>
+    </div>
+    <div class="transport-controls">
+      <button id="btnRandomize" class="btn" title="Mutate Soundscape">MUTATE</button>
+      <button id="btnPower" class="btn btn-power">START AUDIO</button>
+    </div>
+  </header>
+
+  <!-- LIVE OSCILLOSCOPE + SEED BAR -->
+  <section class="scope-bar">
+    <canvas id="scopeCanvas"></canvas>
+    <div class="scope-overlay">
+      <div class="seed-pill">
+        <span>SEED:</span>
+        <input id="seedInput" class="seed-input" type="text" value="shadow-409" maxlength="16" />
+        <button id="btnNewSeed" class="btn btn-mini">ROLL</button>
+      </div>
+      <div id="telemetryReadout" class="telemetry">IDLE</div>
+    </div>
+  </section>
+
+  <!-- MAIN TABBED WORKSPACE -->
+  <main class="workspace">
+
+    <!-- TAB 1: PERFORM & GAMEPLAY SIMULATION -->
+    <div id="tab-perform" class="tab-pane active">
+      <div class="card xy-container">
+        <div class="card-header">
+          <span class="card-title">Atmosphere & Tension Matrix (Touch XY)</span>
+          <span id="xyReadout" class="param-val" style="font-family:var(--font-mono);font-size:10px;">T: 0.20 | I: 0.25</span>
+        </div>
+        <div id="xyPad" class="xy-pad">
+          <span class="xy-axis-label xy-axis-y">▲ INSTABILITY / CHAOS</span>
+          <span class="xy-axis-label xy-axis-x">TENSION / DANGER ►</span>
+          <div id="xyPuck" class="xy-puck"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Discrete Gameplay Event Triggers</span>
+        </div>
+        <div class="event-grid">
+          <button class="btn btn-event" data-event="newGame">NEW GAME</button>
+          <button class="btn btn-event" data-event="portal">PORTAL</button>
+          <button class="btn btn-event" data-event="approachingObstacle">APPROACH</button>
+          <button class="btn btn-event" data-event="obstaclePassed">PASSED</button>
+          <button class="btn btn-event danger" data-event="nearMiss">NEAR MISS</button>
+          <button class="btn btn-event danger" data-event="collision">COLLISION</button>
+        </div>
+        <div style="margin-top: 8px; display:flex; gap:8px;">
+          <button class="btn btn-event danger" style="flex:1;" data-event="gameOver">GAME OVER TRANSITION</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Continuous Gameplay State Vectors</span>
+        </div>
+        <div class="control-grid">
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Tension</span><span id="val-state-tension" class="param-val">0.20</span></div>
+            <input type="range" id="sl-state-tension" min="0" max="1" step="0.01" value="0.20" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Instability</span><span id="val-state-instability" class="param-val">0.25</span></div>
+            <input type="range" id="sl-state-instability" min="0" max="1" step="0.01" value="0.25" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Progression</span><span id="val-state-progression" class="param-val">0.10</span></div>
+            <input type="range" id="sl-state-progression" min="0" max="1" step="0.01" value="0.10" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Proximity</span><span id="val-state-proximity" class="param-val">0.00</span></div>
+            <input type="range" id="sl-state-proximity" min="0" max="1" step="0.01" value="0.00" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: SYNTHESIS & FILTERS -->
+    <div id="tab-synth" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Drone Oscillators & FM Core</span>
+        </div>
+        <div class="control-grid">
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Base Drone Freq</span><span id="val-baseFreq" class="param-val">55 Hz</span></div>
+            <input type="range" data-cat="synth" data-key="baseFreq" min="28" max="140" step="0.5" value="55" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Detune Spread</span><span id="val-detuneSpread" class="param-val">14 ct</span></div>
+            <input type="range" data-cat="synth" data-key="detuneSpread" min="0" max="75" step="0.5" value="14" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Osc 1 Waveform</span></div>
+            <select data-cat="synth" data-key="osc1Type">
+              <option value="sawtooth" selected>Sawtooth</option>
+              <option value="triangle">Triangle</option>
+              <option value="sine">Sine</option>
+              <option value="square">Square (Hollow)</option>
+            </select>
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Osc 2 Waveform</span></div>
+            <select data-cat="synth" data-key="osc2Type">
+              <option value="triangle" selected>Triangle</option>
+              <option value="sawtooth">Sawtooth</option>
+              <option value="sine">Sine</option>
+              <option value="square">Square</option>
+            </select>
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Sub-Octave Level</span><span id="val-subLevel" class="param-val">0.45</span></div>
+            <input type="range" data-cat="synth" data-key="subLevel" min="0" max="1" step="0.01" value="0.45" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Cross-FM Depth</span><span id="val-fmDepth" class="param-val">18</span></div>
+            <input type="range" data-cat="synth" data-key="fmDepth" min="0" max="160" step="1" value="18" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">FM Harmonic Ratio</span><span id="val-fmRatio" class="param-val">1.41</span></div>
+            <input type="range" data-cat="synth" data-key="fmRatio" min="0.25" max="4.0" step="0.01" value="1.41" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Noise Texture Level</span><span id="val-noiseLevel" class="param-val">0.25</span></div>
+            <input type="range" data-cat="synth" data-key="noiseLevel" min="0" max="0.9" step="0.01" value="0.25" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Resonant Spectral Filters</span>
+        </div>
+        <div class="control-grid">
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Drone Filter Cutoff</span><span id="val-cutoff" class="param-val">320 Hz</span></div>
+            <input type="range" data-cat="filter" data-key="cutoff" min="40" max="3200" step="5" value="320" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Drone Resonance (Q)</span><span id="val-resonance" class="param-val">4.2</span></div>
+            <input type="range" data-cat="filter" data-key="resonance" min="0.5" max="18" step="0.1" value="4.2" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Noise Formant Freq</span><span id="val-noiseCutoff" class="param-val">680 Hz</span></div>
+            <input type="range" data-cat="filter" data-key="noiseCutoff" min="100" max="4500" step="10" value="680" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Noise Formant Q</span><span id="val-noiseQ" class="param-val">6.5</span></div>
+            <input type="range" data-cat="filter" data-key="noiseQ" min="0.7" max="20" step="0.1" value="6.5" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: MODULATION & SPATIAL FX -->
+    <div id="tab-mod" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Autonomous Drift & LFO Engine</span>
+        </div>
+        <div class="control-grid">
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">LFO Sweep Rate</span><span id="val-lfoRate" class="param-val">0.12 Hz</span></div>
+            <input type="range" data-cat="modulation" data-key="lfoRate" min="0.02" max="2.5" step="0.01" value="0.12" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">LFO Filter Depth</span><span id="val-lfoDepth" class="param-val">140</span></div>
+            <input type="range" data-cat="modulation" data-key="lfoDepth" min="0" max="900" step="5" value="140" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Stochastic Drift Rate</span><span id="val-driftSpeed" class="param-val">0.35</span></div>
+            <input type="range" data-cat="modulation" data-key="driftSpeed" min="0" max="1" step="0.01" value="0.35" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Stereo Motion Width</span><span id="val-stereoWidth" class="param-val">0.60</span></div>
+            <input type="range" data-cat="modulation" data-key="stereoWidth" min="0" max="1" step="0.01" value="0.60" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Echo Network & Dark Cavern Reverb</span>
+        </div>
+        <div class="control-grid">
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Echo Delay Time</span><span id="val-delayTime" class="param-val">0.42 s</span></div>
+            <input type="range" data-cat="fx" data-key="delayTime" min="0.08" max="0.95" step="0.01" value="0.42" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Echo Feedback</span><span id="val-delayFeedback" class="param-val">0.48</span></div>
+            <input type="range" data-cat="fx" data-key="delayFeedback" min="0" max="0.88" step="0.01" value="0.48" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Echo Wet Mix</span><span id="val-delayMix" class="param-val">0.32</span></div>
+            <input type="range" data-cat="fx" data-key="delayMix" min="0" max="0.8" step="0.01" value="0.32" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Cavern Reverb Mix</span><span id="val-reverbMix" class="param-val">0.45</span></div>
+            <input type="range" data-cat="fx" data-key="reverbMix" min="0" max="0.9" step="0.01" value="0.45" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Saturation Drive</span><span id="val-drive" class="param-val">0.20</span></div>
+            <input type="range" data-cat="fx" data-key="drive" min="0" max="1" step="0.01" value="0.20" />
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Master Output Gain</span><span id="val-masterVol" class="param-val">0.75</span></div>
+            <input type="range" id="sl-masterVol" min="0" max="1" step="0.01" value="0.75" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: PRESETS & SHADOWFLAP EXPORT -->
+    <div id="tab-presets" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Factory & Saved Soundscapes</span>
+        </div>
+        <div id="presetList" class="preset-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Shadowflap JSON Config Import / Export</span>
+          <div style="display:flex; gap:6px;">
+            <button id="btnCopyJson" class="btn btn-mini">COPY JSON</button>
+            <button id="btnLoadJson" class="btn btn-mini">LOAD JSON</button>
+          </div>
+        </div>
+        <textarea id="jsonArea" class="json-box" spellcheck="false"></textarea>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MOBILE TAB BAR -->
+  <nav class="bottom-nav">
+    <button class="nav-tab active" data-tab="tab-perform">PERFORM</button>
+    <button class="nav-tab" data-tab="tab-synth">SYNTH</button>
+    <button class="nav-tab" data-tab="tab-mod">MOD & FX</button>
+    <button class="nav-tab" data-tab="tab-presets">PRESETS</button>
+  </nav>
+</div>
+
+<div id="toast" class="toast">Copied to clipboard</div>
+
+<script>
+/**
+ * ============================================================================
+ * PART A: REUSABLE ECHO ENGINE MODULE (`echo-engine.js`)
+ * Zero DOM dependencies. Can be imported directly into Shadowflap.
+ * ============================================================================
+ */
+class EchoEngine {
+  constructor() {
+    this.ctx = null;
+    this.isRunning = false;
+    this.seed = 'shadow-409';
+    this.prng = this._createPRNG(this.seed);
+    this.driftTimer = null;
+    this.masterVolume = 0.75;
+
+    // Continuous Gameplay State Vector (0.0 to 1.0)
+    this.state = {
+      tension: 0.2,
+      instability: 0.25,
+      progression: 0.1,
+      proximity: 0.0
+    };
+
+    // Current Synthesis & FX Parameters
+    this.params = {
+      synth: {
+        baseFreq: 55.0,
+        osc1Type: 'sawtooth',
+        osc2Type: 'triangle',
+        detuneSpread: 14.0,
+        subLevel: 0.45,
+        fmRatio: 1.41,
+        fmDepth: 18.0,
+        noiseLevel: 0.25
+      },
+      filter: {
+        cutoff: 320.0,
+        resonance: 4.2,
+        noiseCutoff: 680.0,
+        noiseQ: 6.5
+      },
+      modulation: {
+        lfoRate: 0.12,
+        lfoDepth: 140.0,
+        driftSpeed: 0.35,
+        stereoWidth: 0.60
+      },
+      fx: {
+        delayTime: 0.42,
+        delayFeedback: 0.48,
+        delayMix: 0.32,
+        reverbMix: 0.45,
+        drive: 0.20
+      }
+    };
+
+    // Stochastic drift offsets
+    this.driftOffsets = {
+      detune: 0,
+      cutoffFactor: 1,
+      noiseFactor: 1,
+      fmAdd: 0,
+      pan: 0
+    };
+
+    this.nodes = {};
+    this._bindLifecycle();
+  }
+
+  // Deterministic String Hash + Mulberry32 PRNG
+  _createPRNG(seedStr) {
+    let h = 1779033703 ^ String(seedStr).length;
+    for (let i = 0; i < String(seedStr).length; i++) {
+      h = Math.imul(h ^ String(seedStr).charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    let a = (h ^ (h >>> 16)) >>> 0;
+    return function() {
+      let t = (a += 0x6D2B79F5);
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  async init() {
+    if (this.ctx) return;
+
+    // iOS 17+ AudioSession support so silent switch doesn't mute active sound design
+    if (navigator.audioSession) {
+      try { navigator.audioSession.type = 'playback'; } catch (e) {}
+    }
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new AudioCtx({ latencyHint: 'interactive' });
+    this._buildGraph();
+  }
+
+  _buildGraph() {
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+
+    // 1. Oscillators
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const subOsc = ctx.createOscillator();
+    const fmOsc = ctx.createOscillator();
+
+    osc1.type = this.params.synth.osc1Type;
+    osc2.type = this.params.synth.osc2Type;
+    subOsc.type = 'sine';
+    fmOsc.type = 'sine';
+
+    const osc1Gain = ctx.createGain();
+    const osc2Gain = ctx.createGain();
+    const subGain = ctx.createGain();
+    const fmGain = ctx.createGain();
+
+    osc1Gain.gain.value = 0.35;
+    osc2Gain.gain.value = 0.35;
+    subGain.gain.value = this.params.synth.subLevel * 0.5;
+    fmGain.gain.value = this.params.synth.fmDepth;
+
+    // Cross-FM connection
+    fmOsc.connect(fmGain);
+    fmGain.connect(osc1.frequency);
+    fmGain.connect(osc2.frequency);
+
+    // 2. Main Drone Filter
+    const mainFilter = ctx.createBiquadFilter();
+    mainFilter.type = 'lowpass';
+    mainFilter.frequency.value = this.params.filter.cutoff;
+    mainFilter.Q.value = this.params.filter.resonance;
+
+    osc1.connect(osc1Gain);
+    osc2.connect(osc2Gain);
+    subOsc.connect(subGain);
+
+    osc1Gain.connect(mainFilter);
+    osc2Gain.connect(mainFilter);
+    subGain.connect(mainFilter);
+
+    // 3. Looping Brown/Pink Hybrid Noise Generator
+    const noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = this._createBrownNoiseBuffer(5.0);
+    noiseSource.loop = true;
+
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.value = this.params.filter.noiseCutoff;
+    noiseFilter.Q.value = this.params.filter.noiseQ;
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.value = this.params.synth.noiseLevel * 0.4;
+
+    noiseSource.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+
+    // 4. LFOs (Audio-Thread)
+    const lfoFilter = ctx.createOscillator();
+    const lfoFilterGain = ctx.createGain();
+    lfoFilter.type = 'sine';
+    lfoFilter.frequency.value = this.params.modulation.lfoRate;
+    lfoFilterGain.gain.value = this.params.modulation.lfoDepth;
+    lfoFilter.connect(lfoFilterGain);
+    lfoFilterGain.connect(mainFilter.frequency);
+
+    const lfoPan = ctx.createOscillator();
+    const lfoPanGain = ctx.createGain();
+    lfoPan.type = 'triangle';
+    lfoPan.frequency.value = 0.07;
+    lfoPanGain.gain.value = this.params.modulation.stereoWidth * 0.7;
+
+    // 5. Voice Bus & Stereo Panner
+    const voiceBus = ctx.createGain();
+    voiceBus.gain.value = 0.85;
+
+    const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : ctx.createGain();
+    if (panner.pan) {
+      lfoPan.connect(lfoPanGain);
+      lfoPanGain.connect(panner.pan);
+    }
+
+    mainFilter.connect(voiceBus);
+    noiseGain.connect(voiceBus);
+    voiceBus.connect(panner);
+
+    // 6. Dark Filtered Feedback Delay
+    const delayNode = ctx.createDelay(2.0);
+    delayNode.delayTime.value = this.params.fx.delayTime;
+
+    const delayFilter = ctx.createBiquadFilter();
+    delayFilter.type = 'lowpass';
+    delayFilter.frequency.value = 1400;
+
+    const delayFeedback = ctx.createGain();
+    delayFeedback.gain.value = this.params.fx.delayFeedback;
+
+    const delayWet = ctx.createGain();
+    delayWet.gain.value = this.params.fx.delayMix;
+
+    panner.connect(delayNode);
+    delayNode.connect(delayFilter);
+    delayFilter.connect(delayFeedback);
+    delayFeedback.connect(delayNode);
+    delayFilter.connect(delayWet);
+
+    // 7. Procedural Dark Cavern Convolver Reverb
+    const convolver = ctx.createConvolver();
+    convolver.buffer = this._createDarkReverbIR(3.2, 2.8);
+    const reverbWet = ctx.createGain();
+    reverbWet.gain.value = this.params.fx.reverbMix;
+
+    panner.connect(convolver);
+    convolver.connect(reverbWet);
+
+    // 8. Master Saturation, Safety Limiter, Analyser & Output
+    const shaper = ctx.createWaveShaper();
+    shaper.curve = this._makeSoftClipCurve(this.params.fx.drive);
+    shaper.oversample = '2x';
+
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-10, now);
+    compressor.knee.setValueAtTime(8, now);
+    compressor.ratio.setValueAtTime(12, now);
+    compressor.attack.setValueAtTime(0.003, now);
+    compressor.release.setValueAtTime(0.18, now);
+
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 1024;
+    analyser.smoothingTimeConstant = 0.82;
+
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = 0.0001;
+
+    panner.connect(shaper);
+    delayWet.connect(shaper);
+    reverbWet.connect(shaper);
+
+    shaper.connect(compressor);
+    compressor.connect(analyser);
+    analyser.connect(masterGain);
+    masterGain.connect(ctx.destination);
+
+    // Start persistent generators
+    osc1.start(now);
+    osc2.start(now);
+    subOsc.start(now);
+    fmOsc.start(now);
+    noiseSource.start(now);
+    lfoFilter.start(now);
+    lfoPan.start(now);
+
+    this.nodes = {
+      osc1, osc2, subOsc, fmOsc,
+      osc1Gain, osc2Gain, subGain, fmGain,
+      mainFilter, noiseSource, noiseFilter, noiseGain,
+      lfoFilter, lfoFilterGain, lfoPan, lfoPanGain,
+      voiceBus, panner,
+      delayNode, delayFilter, delayFeedback, delayWet,
+      convolver, reverbWet,
+      shaper, compressor, analyser, masterGain
+    };
+
+    this._applyParameters(0.05);
+  }
+
+  // Pre-computed 5-second Brown/Pink Noise Buffer
+  _createBrownNoiseBuffer(durationSeconds) {
+    const sampleRate = this.ctx.sampleRate;
+    const length = sampleRate * durationSeconds;
+    const buffer = this.ctx.createBuffer(1, length, sampleRate);
+    const data = buffer.getChannelData(0);
+    let lastOut = 0.0;
+    for (let i = 0; i < length; i++) {
+      const white = Math.random() * 2 - 1;
+      data[i] = (lastOut + (0.025 * white)) / 1.025;
+      lastOut = data[i];
+      data[i] *= 3.2; // gain compensation
+    }
+    return buffer;
+  }
+
+  // Pre-computed Procedural Dark Impulse Response (Zero external assets)
+  _createDarkReverbIR(duration, decay) {
+    const sampleRate = this.ctx.sampleRate;
+    const length = Math.floor(sampleRate * duration);
+    const impulse = this.ctx.createBuffer(2, length, sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const channelData = impulse.getChannelData(ch);
+      let lp = 0;
+      for (let i = 0; i < length; i++) {
+        const env = Math.pow(1 - i / length, decay);
+        const white = (Math.random() * 2 - 1) * env;
+        // One-pole lowpass damping for dark subterranean character
+        lp = lp * 0.88 + white * 0.12;
+        channelData[i] = lp * 1.6;
+      }
+    }
+    return impulse;
+  }
+
+  _makeSoftClipCurve(driveNormalized) {
+    const samples = 1024;
+    const curve = new Float32Array(samples);
+    const k = 1 + driveNormalized * 12;
+    for (let i = 0; i < samples; i++) {
+      const x = (i * 2) / samples - 1;
+      curve[i] = Math.tanh(k * x) / Math.tanh(k);
+    }
+    return curve;
+  }
+
+  async start(seed) {
+    if (seed) this.setSeed(seed);
+    await this.init();
+    if (this.ctx.state === 'suspended') {
+      await this.ctx.resume();
+    }
+    this.isRunning = true;
+    const now = this.ctx.currentTime;
+    this.nodes.masterGain.gain.setTargetAtTime(this.masterVolume, now, 0.25);
+    this._startStochasticDrift();
+  }
+
+  async stop() {
+    if (!this.ctx || !this.isRunning) return;
+    this.isRunning = false;
+    this._stopStochasticDrift();
+    const now = this.ctx.currentTime;
+    this.nodes.masterGain.gain.setTargetAtTime(0.0001, now, 0.12);
+    setTimeout(() => {
+      if (!this.isRunning && this.ctx && this.ctx.state === 'running') {
+        this.ctx.suspend();
+      }
+    }, 350);
+  }
+
+  setSeed(seedStr) {
+    this.seed = String(seedStr).trim() || 'shadow-000';
+    this.prng = this._createPRNG(this.seed);
+  }
+
+  // Seeded Session Identity Mutation
+  applySeedIdentity(seedStr) {
+    if (seedStr) this.setSeed(seedStr);
+    const r = this.prng;
+
+    // Dark microtonal/atmospheric root frequencies (36Hz - 95Hz)
+    const roots = [36.7, 41.2, 43.65, 49.0, 51.9, 55.0, 61.7, 65.4, 73.4, 82.4];
+    const baseFreq = roots[Math.floor(r() * roots.length)] * (0.97 + r() * 0.06);
+    const waves = ['sawtooth', 'triangle', 'sine', 'square'];
+
+    this.params.synth.baseFreq = Number(baseFreq.toFixed(1));
+    this.params.synth.osc1Type = waves[Math.floor(r() * 3)]; // favor saw/tri/sine
+    this.params.synth.osc2Type = waves[Math.floor(r() * waves.length)];
+    this.params.synth.detuneSpread = Number((6 + r() * 36).toFixed(1));
+    this.params.synth.fmRatio = Number((0.5 + r() * 2.5).toFixed(2));
+    this.params.synth.fmDepth = Math.round(5 + r() * 55);
+    this.params.synth.noiseLevel = Number((0.12 + r() * 0.38).toFixed(2));
+
+    this.params.filter.cutoff = Math.round(140 + r() * 680);
+    this.params.filter.resonance = Number((1.8 + r() * 8.5).toFixed(1));
+    this.params.filter.noiseCutoff = Math.round(280 + r() * 1600);
+    this.params.filter.noiseQ = Number((3.0 + r() * 10.0).toFixed(1));
+
+    this.params.modulation.lfoRate = Number((0.04 + r() * 0.45).toFixed(2));
+    this.params.modulation.lfoDepth = Math.round(60 + r() * 320);
+    this.params.fx.delayTime = Number((0.22 + r() * 0.55).toFixed(2));
+    this.params.fx.delayFeedback = Number((0.32 + r() * 0.42).toFixed(2));
+
+    if (this.ctx) {
+      this.nodes.osc1.type = this.params.synth.osc1Type;
+      this.nodes.osc2.type = this.params.synth.osc2Type;
+      this._applyParameters(0.6);
+    }
+  }
+
+  // 4Hz Stochastic Drift Scheduler (Zero requestAnimationFrame overhead)
+  _startStochasticDrift() {
+    this._stopStochasticDrift();
+    this.driftTimer = setInterval(() => {
+      if (!this.isRunning || !this.ctx) return;
+      const r = this.prng;
+      const speed = this.params.modulation.driftSpeed;
+      const inst = this.state.instability;
+      const chaos = Math.min(1, speed * 0.6 + inst * 0.7);
+
+      // Smoothly walk internal drift offsets
+      this.driftOffsets.detune = (r() * 2 - 1) * 35 * chaos;
+      this.driftOffsets.cutoffFactor = 0.75 + r() * (0.5 + chaos * 0.65);
+      this.driftOffsets.noiseFactor = 0.65 + r() * (0.7 + chaos * 0.9);
+      this.driftOffsets.fmAdd = r() * 45 * chaos;
+
+      // Subtle LFO rate drift so modulation never locks into a predictable loop
+      const lfoJitter = this.params.modulation.lfoRate * (0.82 + r() * 0.36);
+      this.nodes.lfoFilter.frequency.setTargetAtTime(
+        Math.max(0.02, lfoJitter),
+        this.ctx.currentTime,
+        0.8
+      );
+
+      this._applyParameters(0.45);
+    }, 420);
+  }
+
+  _stopStochasticDrift() {
+    if (this.driftTimer) {
+      clearInterval(this.driftTimer);
+      this.driftTimer = null;
+    }
+  }
+
+  // Combines Base Preset + Continuous Game State + Stochastic Drift
+  _applyParameters(glideTime = 0.15) {
+    if (!this.ctx || !this.nodes.osc1) return;
+    const now = this.ctx.currentTime;
+    const { synth, filter, modulation, fx } = this.params;
+    const { tension, instability, progression, proximity } = this.state;
+
+    // 1. Pitch & Detune Calculation
+    const progPitchMultiplier = 1 + progression * 0.22;
+    const baseFreq = Math.max(24, synth.baseFreq * progPitchMultiplier);
+
+    this.nodes.osc1.frequency.setTargetAtTime(baseFreq, now, glideTime);
+    this.nodes.osc2.frequency.setTargetAtTime(baseFreq, now, glideTime);
+    this.nodes.subOsc.frequency.setTargetAtTime(baseFreq * 0.5, now, glideTime);
+    this.nodes.fmOsc.frequency.setTargetAtTime(baseFreq * synth.fmRatio, now, glideTime);
+
+    const totalDetune = synth.detuneSpread + (instability * 28) + this.driftOffsets.detune;
+    this.nodes.osc1.detune.setTargetAtTime(-totalDetune * 0.5, now, glideTime);
+    this.nodes.osc2.detune.setTargetAtTime(totalDetune * 0.5, now, glideTime);
+
+    // 2. FM & Sub Gains
+    const effectiveFm = synth.fmDepth + (tension * 65) + (instability * 40) + this.driftOffsets.fmAdd;
+    this.nodes.fmGain.gain.setTargetAtTime(effectiveFm, now, glideTime);
+
+    const effectiveSub = Math.min(0.85, (synth.subLevel + proximity * 0.35) * 0.55);
+    this.nodes.subGain.gain.setTargetAtTime(effectiveSub, now, glideTime);
+
+    // 3. Filter Cutoff & Resonance
+    const tensionCutoffBoost = 1 + tension * 2.2 + proximity * 0.8;
+    const targetCutoff = Math.min(
+      6500,
+      Math.max(40, filter.cutoff * tensionCutoffBoost * this.driftOffsets.cutoffFactor)
+    );
+    const targetRes = Math.min(20, filter.resonance + tension * 4.5);
+
+    this.nodes.mainFilter.frequency.setTargetAtTime(targetCutoff, now, glideTime);
+    this.nodes.mainFilter.Q.setTargetAtTime(targetRes, now, glideTime);
+
+    // 4. Noise Texture Filter & Gain
+    const targetNoiseFreq = Math.min(
+      6000,
+      Math.max(90, filter.noiseCutoff * (1 + tension * 0.9) * this.driftOffsets.noiseFactor)
+    );
+    this.nodes.noiseFilter.frequency.setTargetAtTime(targetNoiseFreq, now, glideTime);
+    this.nodes.noiseFilter.Q.setTargetAtTime(Math.min(22, filter.noiseQ + instability * 5), now, glideTime);
+    this.nodes.noiseGain.gain.setTargetAtTime((synth.noiseLevel + tension * 0.15) * 0.45, now, glideTime);
+
+    // 5. Modulation & FX
+    const effectiveLfoDepth = modulation.lfoDepth * (1 + tension * 0.7 + instability * 0.6);
+    this.nodes.lfoFilterGain.gain.setTargetAtTime(effectiveLfoDepth, now, glideTime);
+    this.nodes.lfoPanGain.gain.setTargetAtTime(modulation.stereoWidth * 0.75, now, glideTime);
+    this.nodes.lfoPan.frequency.setTargetAtTime(0.06 + proximity * 1.4, now, glideTime);
+
+    this.nodes.delayNode.delayTime.setTargetAtTime(fx.delayTime, now, glideTime);
+    this.nodes.delayFeedback.gain.setTargetAtTime(Math.min(0.9, fx.delayFeedback + tension * 0.12), now, glideTime);
+    this.nodes.delayWet.gain.setTargetAtTime(fx.delayMix, now, glideTime);
+    this.nodes.reverbWet.gain.setTargetAtTime(fx.reverbMix, now, glideTime);
+  }
+
+  // Public API: Update continuous gameplay state
+  setState(partialState) {
+    Object.assign(this.state, partialState);
+    this._applyParameters(0.18);
+  }
+
+  // Public API: Update individual synth/filter/mod/fx parameter
+  setParam(category, key, value) {
+    if (!this.params[category]) return;
+    this.params[category][key] = value;
+
+    if (!this.ctx) return;
+    if (category === 'synth' && (key === 'osc1Type' || key === 'osc2Type')) {
+      this.nodes[key === 'osc1Type' ? 'osc1' : 'osc2'].type = value;
+      return;
+    }
+    if (category === 'fx' && key === 'drive') {
+      this.nodes.shaper.curve = this._makeSoftClipCurve(Number(value));
+      return;
+    }
+    this._applyParameters(0.08);
+  }
+
+  setMasterVolume(val) {
+    this.masterVolume = Math.max(0, Math.min(1, Number(val)));
+    if (this.ctx && this.isRunning) {
+      this.nodes.masterGain.gain.setTargetAtTime(this.masterVolume, this.ctx.currentTime, 0.05);
+    }
+  }
+
+  // Public API: Discrete Gameplay Event Synthesizer
+  triggerEvent(type, options = {}) {
+    if (!this.ctx || !this.isRunning) return;
+    const now = this.ctx.currentTime;
+    const intensity = options.intensity ?? 0.8;
+    const r = this.prng;
+
+    switch (type) {
+      case 'newGame': {
+        const newSeed = options.seed || 'sf-' + Math.floor(100 + Math.random() * 899);
+        this.applySeedIdentity(newSeed);
+        this._spawnTransient({
+          freqStart: this.params.synth.baseFreq * 2,
+          freqEnd: this.params.synth.baseFreq,
+          duration: 1.4,
+          type: 'sine',
+          fmFreq: this.params.synth.baseFreq * 1.5,
+          fmIndex: 45,
+          gain: 0.35
+        });
+        break;
+      }
+
+      case 'portal': {
+        // Resonant spectral sweep + bi-directional FM shimmer
+        this.nodes.mainFilter.frequency.setTargetAtTime(2400, now, 0.12);
+        this.nodes.mainFilter.frequency.setTargetAtTime(this.params.filter.cutoff, now + 0.45, 0.45);
+        this._spawnTransient({
+          freqStart: 180 + r() * 90,
+          freqEnd: 740 + r() * 200,
+          duration: 1.1,
+          type: 'triangle',
+          fmFreq: 110,
+          fmIndex: 140 * intensity,
+          gain: 0.28,
+          pan: (r() * 2 - 1) * 0.7
+        });
+        break;
+      }
+
+      case 'approachingObstacle': {
+        // Pulse noise formant & brief FM tension
+        this.nodes.noiseFilter.frequency.setTargetAtTime(1600, now, 0.08);
+        this.nodes.noiseFilter.frequency.setTargetAtTime(this.params.filter.noiseCutoff, now + 0.3, 0.25);
+        this._spawnTransient({
+          freqStart: this.params.synth.baseFreq * 2.5,
+          freqEnd: this.params.synth.baseFreq * 3.1,
+          duration: 0.45,
+          type: 'sawtooth',
+          fmFreq: 68,
+          fmIndex: 60,
+          gain: 0.18
+        });
+        break;
+      }
+
+      case 'obstaclePassed': {
+        // Warm low-pass release sigh
+        this._spawnTransient({
+          freqStart: this.params.synth.baseFreq * 3,
+          freqEnd: this.params.synth.baseFreq * 1.5,
+          duration: 0.65,
+          type: 'sine',
+          fmFreq: this.params.synth.baseFreq,
+          fmIndex: 15,
+          gain: 0.22
+        });
+        break;
+      }
+
+      case 'nearMiss': {
+        // High-velocity metallic Doppler whoosh
+        this._spawnTransient({
+          freqStart: 620 + r() * 180,
+          freqEnd: 140,
+          duration: 0.5,
+          type: 'sawtooth',
+          fmFreq: 233,
+          fmIndex: 220 * intensity,
+          gain: 0.3,
+          pan: r() > 0.5 ? 0.85 : -0.85
+        });
+        break;
+      }
+
+      case 'collision': {
+        // Sub thud + dissonant metallic cluster burst
+        this._spawnTransient({
+          freqStart: 135,
+          freqEnd: 28,
+          duration: 0.65,
+          type: 'triangle',
+          fmFreq: 53,
+          fmIndex: 340 * intensity,
+          gain: 0.5
+        });
+        this._spawnTransient({
+          freqStart: 390,
+          freqEnd: 195,
+          duration: 0.45,
+          type: 'square',
+          fmFreq: 147,
+          fmIndex: 290,
+          gain: 0.24
+        });
+        break;
+      }
+
+      case 'gameOver': {
+        // Pitch dive & cavern tail swell
+        const base = this.params.synth.baseFreq;
+        this.nodes.osc1.frequency.setTargetAtTime(base * 0.5, now, 0.7);
+        this.nodes.osc2.frequency.setTargetAtTime(base * 0.49, now, 0.7);
+        this.nodes.mainFilter.frequency.setTargetAtTime(95, now, 0.6);
+        this._spawnTransient({
+          freqStart: base * 2,
+          freqEnd: base * 0.5,
+          duration: 2.2,
+          type: 'sine',
+          fmFreq: base * 0.75,
+          fmIndex: 80,
+          gain: 0.35
+        });
+        setTimeout(() => {
+          if (this.isRunning) this._applyParameters(1.2);
+        }, 2300);
+        break;
+      }
+    }
+  }
+
+  // Short-lived self-cleaning transient voice connected into FX bus
+  _spawnTransient({ freqStart, freqEnd, duration, type = 'sine', fmFreq = 80, fmIndex = 50, gain = 0.25, pan = 0 }) {
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+
+    const carrier = ctx.createOscillator();
+    const mod = ctx.createOscillator();
+    const modGain = ctx.createGain();
+    const env = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    carrier.type = type;
+    carrier.frequency.setValueAtTime(freqStart, now);
+    carrier.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), now + duration);
+
+    mod.type = 'sine';
+    mod.frequency.setValueAtTime(fmFreq, now);
+    modGain.gain.setValueAtTime(fmIndex, now);
+    modGain.gain.exponentialRampToValueAtTime(0.1, now + duration);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(2600, now);
+    filter.frequency.exponentialRampToValueAtTime(220, now + duration);
+
+    env.gain.setValueAtTime(0.0001, now);
+    env.gain.linearRampToValueAtTime(gain, now + 0.015);
+    env.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    mod.connect(modGain);
+    modGain.connect(carrier.frequency);
+    carrier.connect(filter);
+    filter.connect(env);
+
+    // Route into main voiceBus so transients inherit stereo delay & cavern reverb
+    env.connect(this.nodes.voiceBus);
+
+    carrier.start(now);
+    mod.start(now);
+    carrier.stop(now + duration + 0.05);
+    mod.stop(now + duration + 0.05);
+  }
+
+  loadPreset(preset, preserveSeed = false) {
+    if (!preserveSeed && preset.seed) {
+      this.setSeed(preset.seed);
+    }
+    if (preset.synth) Object.assign(this.params.synth, preset.synth);
+    if (preset.filter) Object.assign(this.params.filter, preset.filter);
+    if (preset.modulation) Object.assign(this.params.modulation, preset.modulation);
+    if (preset.fx) Object.assign(this.params.fx, preset.fx);
+
+    if (this.ctx && this.nodes.osc1) {
+      this.nodes.osc1.type = this.params.synth.osc1Type;
+      this.nodes.osc2.type = this.params.synth.osc2Type;
+      this.nodes.shaper.curve = this._makeSoftClipCurve(this.params.fx.drive);
+      this._applyParameters(0.25);
+    }
+  }
+
+  exportPreset(name = 'Custom Soundscape') {
+    return {
+      name,
+      version: '1.0',
+      seed: this.seed,
+      synth: { ...this.params.synth },
+      filter: { ...this.params.filter },
+      modulation: { ...this.params.modulation },
+      fx: { ...this.params.fx }
+    };
+  }
+
+  getAnalyser() {
+    return this.nodes.analyser || null;
+  }
+
+  _bindLifecycle() {
+    document.addEventListener('visibilitychange', () => {
+      if (!this.ctx || !this.isRunning) return;
+      if (document.hidden) {
+        this.nodes.masterGain.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.05);
+        setTimeout(() => {
+          if (document.hidden && this.ctx) this.ctx.suspend();
+        }, 160);
+      } else {
+        this.ctx.resume().then(() => {
+          this.nodes.masterGain.gain.setTargetAtTime(this.masterVolume, this.ctx.currentTime, 0.15);
+        });
+      }
+    });
+  }
+}
+
+/**
+ * ============================================================================
+ * PART B: SOUND LABORATORY UI & PRESET MANAGER
+ * ============================================================================
+ */
+const FACTORY_PRESETS = [
+  {
+    name: 'Subterranean Reactor',
+    version: '1.0',
+    seed: 'shadow-409',
+    synth: { baseFreq: 55, osc1Type: 'sawtooth', osc2Type: 'triangle', detuneSpread: 14, subLevel: 0.45, fmRatio: 1.41, fmDepth: 18, noiseLevel: 0.25 },
+    filter: { cutoff: 320, resonance: 4.2, noiseCutoff: 680, noiseQ: 6.5 },
+    modulation: { lfoRate: 0.12, lfoDepth: 140, driftSpeed: 0.35, stereoWidth: 0.6 },
+    fx: { delayTime: 0.42, delayFeedback: 0.48, delayMix: 0.32, reverbMix: 0.45, drive: 0.2 }
+  },
+  {
+    name: 'Rusted Monolith',
+    version: '1.0',
+    seed: 'monolith-88',
+    synth: { baseFreq: 41.2, osc1Type: 'sawtooth', osc2Type: 'square', detuneSpread: 26, subLevel: 0.6, fmRatio: 2.13, fmDepth: 48, noiseLevel: 0.35 },
+    filter: { cutoff: 210, resonance: 7.5, noiseCutoff: 1120, noiseQ: 9.2 },
+    modulation: { lfoRate: 0.07, lfoDepth: 220, driftSpeed: 0.55, stereoWidth: 0.75 },
+    fx: { delayTime: 0.58, delayFeedback: 0.62, delayMix: 0.4, reverbMix: 0.6, drive: 0.42 }
+  },
+  {
+    name: 'Void Transmission',
+    version: '1.0',
+    seed: 'void-773',
+    synth: { baseFreq: 65.4, osc1Type: 'sine', osc2Type: 'triangle', detuneSpread: 9.5, subLevel: 0.35, fmRatio: 2.82, fmDepth: 64, noiseLevel: 0.42 },
+    filter: { cutoff: 540, resonance: 9.8, noiseCutoff: 1850, noiseQ: 14.0 },
+    modulation: { lfoRate: 0.28, lfoDepth: 340, driftSpeed: 0.72, stereoWidth: 0.85 },
+    fx: { delayTime: 0.33, delayFeedback: 0.66, delayMix: 0.48, reverbMix: 0.52, drive: 0.15 }
+  },
+  {
+    name: 'Abyssal Pressure',
+    version: '1.0',
+    seed: 'abyss-12',
+    synth: { baseFreq: 36.7, osc1Type: 'triangle', osc2Type: 'sawtooth', detuneSpread: 19, subLevel: 0.8, fmRatio: 0.5, fmDepth: 12, noiseLevel: 0.18 },
+    filter: { cutoff: 145, resonance: 3.4, noiseCutoff: 340, noiseQ: 4.5 },
+    modulation: { lfoRate: 0.05, lfoDepth: 95, driftSpeed: 0.25, stereoWidth: 0.5 },
+    fx: { delayTime: 0.72, delayFeedback: 0.54, delayMix: 0.36, reverbMix: 0.7, drive: 0.3 }
+  }
+];
+
+const engine = new EchoEngine();
+
+// DOM References
+const btnPower = document.getElementById('btnPower');
+const btnRandomize = document.getElementById('btnRandomize');
+const btnNewSeed = document.getElementById('btnNewSeed');
+const seedInput = document.getElementById('seedInput');
+const statusDot = document.getElementById('statusDot');
+const telemetryReadout = document.getElementById('telemetryReadout');
+const jsonArea = document.getElementById('jsonArea');
+const toast = document.getElementById('toast');
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+// Format display units nicely
+function formatUnit(key, val) {
+  const n = Number(val);
+  if (key.includes('Freq') || key.includes('cutoff') || key.includes('Cutoff')) return `${Math.round(n)} Hz`;
+  if (key === 'detuneSpread') return `${n.toFixed(1)} ct`;
+  if (key === 'lfoRate') return `${n.toFixed(2)} Hz`;
+  if (key === 'delayTime') return `${n.toFixed(2)} s`;
+  return n.toFixed(2).replace(/\.00$/, '');
+}
+
+// Sync all HTML inputs and labels from engine state
+function syncUIFromEngine() {
+  seedInput.value = engine.seed;
+  document.querySelectorAll('[data-cat]').forEach((el) => {
+    const cat = el.dataset.cat;
+    const key = el.dataset.key;
+    const val = engine.params[cat][key];
+    el.value = val;
+    const label = document.getElementById(`val-${key}`);
+    if (label) label.textContent = formatUnit(key, val);
+  });
+
+  // Update JSON export box
+  jsonArea.value = JSON.stringify(engine.exportPreset(), null, 2);
+}
+
+// Power Toggle
+btnPower.addEventListener('click', async () => {
+  if (!engine.isRunning) {
+    await engine.start(seedInput.value);
+    btnPower.textContent = 'STOP AUDIO';
+    btnPower.classList.add('running');
+    statusDot.classList.add('active');
+    telemetryReadout.textContent = `${engine.ctx.sampleRate}Hz // ACTIVE`;
+  } else {
+    await engine.stop();
+    btnPower.textContent = 'START AUDIO';
+    btnPower.classList.remove('running');
+    statusDot.classList.remove('active');
+    telemetryReadout.textContent = 'SUSPENDED';
+  }
+});
+
+// Seed Roll & Mutate
+btnNewSeed.addEventListener('click', async () => {
+  const newSeed = 'sf-' + Math.random().toString(36).substring(2, 7);
+  if (!engine.isRunning) await btnPower.click();
+  engine.applySeedIdentity(newSeed);
+  syncUIFromEngine();
+  showToast(`Seed: ${newSeed}`);
+});
+
+btnRandomize.addEventListener('click', async () => {
+  if (!engine.isRunning) await btnPower.click();
+  const nextSeed = seedInput.value + '-' + Math.floor(Math.random() * 99);
+  engine.applySeedIdentity(nextSeed);
+  syncUIFromEngine();
+  showToast('Soundscape Mutated');
+});
+
+seedInput.addEventListener('change', () => {
+  engine.applySeedIdentity(seedInput.value);
+  syncUIFromEngine();
+});
+
+// Bind Synth / Filter / Mod / FX controls
+document.querySelectorAll('[data-cat]').forEach((el) => {
+  const eventType = el.tagName === 'SELECT' ? 'change' : 'input';
+  el.addEventListener(eventType, (e) => {
+    const cat = el.dataset.cat;
+    const key = el.dataset.key;
+    const val = el.tagName === 'SELECT' ? e.target.value : parseFloat(e.target.value);
+    engine.setParam(cat, key, val);
+    const label = document.getElementById(`val-${key}`);
+    if (label) label.textContent = formatUnit(key, val);
+    jsonArea.value = JSON.stringify(engine.exportPreset(), null, 2);
+  });
+});
+
+// Master Volume Slider
+const slMasterVol = document.getElementById('sl-masterVol');
+slMasterVol.addEventListener('input', (e) => {
+  const v = parseFloat(e.target.value);
+  engine.setMasterVolume(v);
+  document.getElementById('val-masterVol').textContent = v.toFixed(2);
+});
+
+// Continuous State Sliders & XY Pad Synchronization
+const xyPad = document.getElementById('xyPad');
+const xyPuck = document.getElementById('xyPuck');
+const xyReadout = document.getElementById('xyReadout');
+
+function updateStateUI(tension, instability) {
+  xyPuck.style.left = `${tension * 100}%`;
+  xyPuck.style.top = `${(1 - instability) * 100}%`;
+  xyReadout.textContent = `T: ${tension.toFixed(2)} | I: ${instability.toFixed(2)}`;
+
+  document.getElementById('sl-state-tension').value = tension;
+  document.getElementById('val-state-tension').textContent = tension.toFixed(2);
+  document.getElementById('sl-state-instability').value = instability;
+  document.getElementById('val-state-instability').textContent = instability.toFixed(2);
+}
+
+let isDraggingXY = false;
+function handleXYPointer(e) {
+  const rect = xyPad.getBoundingClientRect();
+  const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const y = Math.max(0, Math.min(1, 1 - (e.clientY - rect.top) / rect.height));
+  engine.setState({ tension: x, instability: y });
+  updateStateUI(x, y);
+}
+
+xyPad.addEventListener('pointerdown', async (e) => {
+  if (!engine.isRunning) await btnPower.click();
+  isDraggingXY = true;
+  xyPad.setPointerCapture(e.pointerId);
+  handleXYPointer(e);
+});
+xyPad.addEventListener('pointermove', (e) => {
+  if (isDraggingXY) handleXYPointer(e);
+});
+xyPad.addEventListener('pointerup', () => { isDraggingXY = false; });
+
+['tension', 'instability', 'progression', 'proximity'].forEach((stateKey) => {
+  const slider = document.getElementById(`sl-state-${stateKey}`);
+  const label = document.getElementById(`val-state-${stateKey}`);
+  slider.addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    label.textContent = val.toFixed(2);
+    engine.setState({ [stateKey]: val });
+    if (stateKey === 'tension' || stateKey === 'instability') {
+      updateStateUI(engine.state.tension, engine.state.instability);
+    }
+  });
+});
+
+// Discrete Gameplay Event Buttons
+document.querySelectorAll('[data-event]').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    if (!engine.isRunning) await btnPower.click();
+    const ev = btn.dataset.event;
+    engine.triggerEvent(ev, { intensity: 0.85 });
+    if (ev === 'newGame') syncUIFromEngine();
+    btn.classList.add('flash');
+    setTimeout(() => btn.classList.remove('flash'), 220);
+  });
+});
+
+// Mobile Tab Navigation
+document.querySelectorAll('.nav-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach((t) => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach((p) => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
+
+// Presets & JSON Import/Export
+const presetList = document.getElementById('presetList');
+FACTORY_PRESETS.forEach((preset) => {
+  const b = document.createElement('button');
+  b.className = 'btn';
+  b.textContent = preset.name;
+  b.addEventListener('click', async () => {
+    if (!engine.isRunning) await btnPower.click();
+    engine.loadPreset(preset);
+    syncUIFromEngine();
+    showToast(`Loaded: ${preset.name}`);
+  });
+  presetList.appendChild(b);
+});
+
+document.getElementById('btnCopyJson').addEventListener('click', () => {
+  navigator.clipboard.writeText(jsonArea.value).then(() => showToast('JSON Copied!'));
+});
+
+document.getElementById('btnLoadJson').addEventListener('click', () => {
+  try {
+    const parsed = JSON.parse(jsonArea.value);
+    engine.loadPreset(parsed);
+    syncUIFromEngine();
+    showToast('JSON Preset Loaded');
+  } catch (err) {
+    showToast('Invalid JSON format');
+  }
+});
+
+// Real-Time Oscilloscope & Spectrum Visualizer
+const canvas = document.getElementById('scopeCanvas');
+const cctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.clientWidth * dpr;
+  canvas.height = canvas.clientHeight * dpr;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+const timeData = new Uint8Array(1024);
+const freqData = new Uint8Array(512);
+
+function renderScope() {
+  requestAnimationFrame(renderScope);
+  const w = canvas.width;
+  const h = canvas.height;
+
+  cctx.fillStyle = 'rgba(5, 6, 8, 0.32)';
+  cctx.fillRect(0, 0, w, h);
+
+  const analyser = engine.getAnalyser();
+  if (!analyser || !engine.isRunning) {
+    cctx.strokeStyle = 'rgba(184, 134, 255, 0.2)';
+    cctx.lineWidth = 1.5;
+    cctx.beginPath();
+    cctx.moveTo(0, h / 2);
+    cctx.lineTo(w, h / 2);
+    cctx.stroke();
+    return;
+  }
+
+  analyser.getByteFrequencyData(freqData);
+  analyser.getByteTimeDomainData(timeData);
+
+  // Subtle Spectrum Bars
+  const barCount = 64;
+  const barWidth = w / barCount;
+  cctx.fillStyle = 'rgba(184, 134, 255, 0.14)';
+  for (let i = 0; i < barCount; i++) {
+    const val = freqData[i * 2] / 255;
+    const barH = val * h * 0.85;
+    cctx.fillRect(i * barWidth, h - barH, barWidth - 2, barH);
+  }
+
+  // Oscilloscope Waveform
+  cctx.lineWidth = 2;
+  cctx.strokeStyle = '#38e2c7';
+  cctx.beginPath();
+  const sliceWidth = w / timeData.length;
+  let x = 0;
+  for (let i = 0; i < timeData.length; i++) {
+    const v = timeData[i] / 128.0;
+    const y = (v * h) / 2;
+    if (i === 0) cctx.moveTo(x, y);
+    else cctx.lineTo(x, y);
+    x += sliceWidth;
+  }
+  cctx.stroke();
+}
+
+syncUIFromEngine();
+renderScope();
+</script>
+</body>
+</html>
