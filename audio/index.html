@@ -413,6 +413,32 @@
     }
 
     /* PRESETS & JSON */
+    .keyboard {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(38px, 1fr));
+      gap: 4px;
+      overflow-x: auto;
+      padding: 2px 1px 6px;
+      touch-action: pan-x;
+    }
+    .key-note {
+      min-width: 38px;
+      min-height: 76px;
+      border: 1px solid var(--border-hi);
+      border-radius: 0 0 5px 5px;
+      background: linear-gradient(180deg, #e7e8f0, #9da4b7);
+      color: #151722;
+      font: 10px var(--font-mono);
+      font-weight: 700;
+      touch-action: none;
+    }
+    .key-note.black {
+      background: linear-gradient(180deg, #343746, #11131b);
+      color: #e2e6f0;
+      border-color: #454b5d;
+    }
+    .key-note:active, .key-note.playing { background: var(--accent); color: #08090c; }
+    .key-hint { color: var(--text-muted); font: 10px var(--font-mono); margin: 0 0 8px; }
     .preset-list {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -652,6 +678,15 @@
       </div>
     </div>
 
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Touch Keyboard // Note audition</span>
+          <span class="param-val" id="noteReadout">C4</span>
+        </div>
+        <p class="key-hint">Hold a key to audition; slide across keys on touch. Notes use the current synthesis and spatial FX.</p>
+        <div id="noteKeyboard" class="keyboard" role="group" aria-label="Musical note audition keyboard"></div>
+      </div>
+    </div>
     <!-- TAB 3: MODULATION & SPATIAL FX -->
     <div id="tab-mod" class="tab-pane">
       <div class="card">
@@ -760,6 +795,7 @@ class EchoEngine {
     this.prng = this._createPRNG(this.seed);
     this.driftTimer = null;
     this.masterVolume = 0.75;
+    this.noteVoices = new Map();
 
     // Continuous Gameplay State Vector (0.0 to 1.0)
     this.state = {
@@ -1075,6 +1111,7 @@ class EchoEngine {
     if (!this.ctx || !this.isRunning) return;
     this.isRunning = false;
     this._stopStochasticDrift();
+    for (const id of [...this.noteVoices.keys()]) this.releaseNote(id);
     const now = this.ctx.currentTime;
     this.nodes.masterGain.gain.setTargetAtTime(0.0001, now, 0.12);
     setTimeout(() => {
@@ -1450,6 +1487,45 @@ class EchoEngine {
     };
   }
 
+  playNote(id, frequency, velocity = 0.65, pan = 0) {
+    if (!this.ctx || !this.nodes.voiceBus) return;
+    this.releaseNote(id);
+    const now = this.ctx.currentTime;
+    const carrier = this.ctx.createOscillator();
+    const overtone = this.ctx.createOscillator();
+    const filter = this.ctx.createBiquadFilter();
+    const envelope = this.ctx.createGain();
+    const panner = this.ctx.createStereoPanner();
+    carrier.type = 'triangle';
+    carrier.frequency.setValueAtTime(frequency, now);
+    overtone.type = 'sine';
+    overtone.frequency.setValueAtTime(frequency * 2.003, now);
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(Math.min(9000, Math.max(900, frequency * 12)), now);
+    envelope.gain.setValueAtTime(0.0001, now);
+    envelope.gain.exponentialRampToValueAtTime(Math.max(0.015, velocity * 0.16), now + 0.025);
+    panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), now);
+    carrier.connect(filter);
+    overtone.connect(filter);
+    filter.connect(envelope);
+    envelope.connect(panner);
+    panner.connect(this.nodes.voiceBus);
+    carrier.start(now);
+    overtone.start(now);
+    this.noteVoices.set(id, { carrier, overtone, envelope });
+  }
+
+  releaseNote(id) {
+    const voice = this.noteVoices?.get(id);
+    if (!voice || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    voice.envelope.gain.cancelScheduledValues(now);
+    voice.envelope.gain.setTargetAtTime(0.0001, now, 0.04);
+    voice.carrier.stop(now + 0.22);
+    voice.overtone.stop(now + 0.22);
+    this.noteVoices.delete(id);
+  }
+
   getAnalyser() {
     return this.nodes.analyser || null;
   }
@@ -1512,6 +1588,34 @@ const FACTORY_PRESETS = [
     filter: { cutoff: 145, resonance: 3.4, noiseCutoff: 340, noiseQ: 4.5 },
     modulation: { lfoRate: 0.05, lfoDepth: 95, driftSpeed: 0.25, stereoWidth: 0.5 },
     fx: { delayTime: 0.72, delayFeedback: 0.54, delayMix: 0.36, reverbMix: 0.7, drive: 0.3 }
+  },
+  {
+    name: 'Sickroom Carousel', version: '1.0', seed: 'sickroom-204',
+    synth: { baseFreq: 49, osc1Type: 'square', osc2Type: 'sawtooth', detuneSpread: 42, subLevel: 0.38, fmRatio: 2.71, fmDepth: 112, noiseLevel: 0.56 },
+    filter: { cutoff: 710, resonance: 14.2, noiseCutoff: 2310, noiseQ: 16.4 },
+    modulation: { lfoRate: 0.42, lfoDepth: 510, driftSpeed: 0.86, stereoWidth: 0.96 },
+    fx: { delayTime: 0.27, delayFeedback: 0.71, delayMix: 0.43, reverbMix: 0.64, drive: 0.48 }
+  },
+  {
+    name: 'Moth Choir', version: '1.0', seed: 'moth-choir',
+    synth: { baseFreq: 73.4, osc1Type: 'sine', osc2Type: 'triangle', detuneSpread: 31, subLevel: 0.22, fmRatio: 3.18, fmDepth: 78, noiseLevel: 0.48 },
+    filter: { cutoff: 920, resonance: 11.6, noiseCutoff: 3250, noiseQ: 17.2 },
+    modulation: { lfoRate: 0.67, lfoDepth: 420, driftSpeed: 0.68, stereoWidth: 1 },
+    fx: { delayTime: 0.51, delayFeedback: 0.69, delayMix: 0.52, reverbMix: 0.76, drive: 0.24 }
+  },
+  {
+    name: 'The Bent Hallway', version: '1.0', seed: 'bent-hallway',
+    synth: { baseFreq: 43.65, osc1Type: 'sawtooth', osc2Type: 'square', detuneSpread: 55, subLevel: 0.5, fmRatio: 0.73, fmDepth: 136, noiseLevel: 0.3 },
+    filter: { cutoff: 440, resonance: 17.1, noiseCutoff: 870, noiseQ: 19 },
+    modulation: { lfoRate: 0.09, lfoDepth: 780, driftSpeed: 0.95, stereoWidth: 0.9 },
+    fx: { delayTime: 0.81, delayFeedback: 0.79, delayMix: 0.55, reverbMix: 0.84, drive: 0.62 }
+  },
+  {
+    name: 'Glass Teeth', version: '1.0', seed: 'glass-teeth',
+    synth: { baseFreq: 61.7, osc1Type: 'triangle', osc2Type: 'sawtooth', detuneSpread: 37, subLevel: 0.31, fmRatio: 3.72, fmDepth: 92, noiseLevel: 0.67 },
+    filter: { cutoff: 1280, resonance: 12.7, noiseCutoff: 3970, noiseQ: 18 },
+    modulation: { lfoRate: 1.08, lfoDepth: 690, driftSpeed: 0.81, stereoWidth: 0.98 },
+    fx: { delayTime: 0.19, delayFeedback: 0.57, delayMix: 0.46, reverbMix: 0.58, drive: 0.72 }
   }
 ];
 
@@ -1575,6 +1679,70 @@ btnPower.addEventListener('click', async () => {
     telemetryReadout.textContent = 'SUSPENDED';
   }
 });
+
+// Touch keyboard: pointer capture lets a held note glide across adjacent keys.
+const noteKeyboard = document.getElementById('noteKeyboard');
+const noteReadout = document.getElementById('noteReadout');
+const noteNames = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B', 'C'];
+let activeKeyboardNote = null;
+let keyboardPointerId = null;
+function noteAtPoint(x, y) {
+  const key = document.elementFromPoint(x, y)?.closest('[data-midi]');
+  return key && noteKeyboard.contains(key) ? key : null;
+}
+function beginKeyboardNote(key) {
+  if (activeKeyboardNote?.dataset.midi === key.dataset.midi) return;
+  if (activeKeyboardNote) {
+    engine.releaseNote(`keyboard-${activeKeyboardNote.dataset.midi}`);
+    activeKeyboardNote.classList.remove('playing');
+  }
+  activeKeyboardNote = key;
+  if (!key) return;
+  const midi = Number(key.dataset.midi);
+  const pan = (midi - 60) / 18;
+  engine.playNote(`keyboard-${midi}`, 440 * Math.pow(2, (midi - 69) / 12), 0.65, pan);
+  key.classList.add('playing');
+  noteReadout.textContent = key.dataset.label;
+}
+function endKeyboardNote() {
+  if (activeKeyboardNote) {
+    engine.releaseNote(`keyboard-${activeKeyboardNote.dataset.midi}`);
+    activeKeyboardNote.classList.remove('playing');
+    activeKeyboardNote = null;
+  }
+  keyboardPointerId = null;
+}
+noteNames.forEach((name, index) => {
+  const midi = 60 + index;
+  const key = document.createElement('button');
+  key.type = 'button';
+  key.className = `key-note${name.includes('♯') ? ' black' : ''}`;
+  key.dataset.midi = midi;
+  key.dataset.label = `${name}${index === 12 ? 5 : 4}`;
+  key.setAttribute('aria-label', `Play ${key.dataset.label}`);
+  key.addEventListener('click', async () => {
+    if (!engine.isRunning) await btnPower.click();
+    beginKeyboardNote(key);
+    setTimeout(() => {
+      engine.releaseNote(`keyboard-${midi}`);
+      key.classList.remove('playing');
+      if (activeKeyboardNote === key) activeKeyboardNote = null;
+    }, 260);
+  });
+  noteKeyboard.appendChild(key);
+});
+noteKeyboard.addEventListener('pointerdown', async (event) => {
+  const key = noteAtPoint(event.clientX, event.clientY);
+  if (!key) return;
+  if (!engine.isRunning) await btnPower.click();
+  keyboardPointerId = event.pointerId;
+  noteKeyboard.setPointerCapture(event.pointerId);
+  beginKeyboardNote(key);
+});
+noteKeyboard.addEventListener('pointermove', (event) => {
+  if (event.pointerId === keyboardPointerId) beginKeyboardNote(noteAtPoint(event.clientX, event.clientY));
+});
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) => noteKeyboard.addEventListener(type, endKeyboardNote));
 
 // Seed Roll & Mutate
 btnNewSeed.addEventListener('click', async () => {
